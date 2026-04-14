@@ -8,6 +8,8 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    html { overflow-x: hidden; }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic UI', sans-serif;
       background: #FFFBEB;
@@ -15,6 +17,7 @@
       max-width: 480px;
       margin: 0 auto;
       min-height: 100vh;
+      overflow-x: hidden;
     }
 
     /* ── Screens ── */
@@ -67,10 +70,7 @@
     .fab {
       position: fixed;
       bottom: 28px;
-      right: 50%;
-      transform: translateX(50%);
-      max-width: 480px;
-      right: calc(50% - min(240px, 50vw));
+      right: 20px;
       width: 56px;
       height: 56px;
       background: #F59E0B;
