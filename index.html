@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Mead Log</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic UI', sans-serif;
+      background: #FFFBEB;
+      color: #1C1917;
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100vh;
+    }
+
+    /* ── Screens ── */
+    .screen { display: none; flex-direction: column; min-height: 100vh; }
+    .screen.active { display: flex; }
+
+    /* ── Header ── */
+    .header {
+      background: #F59E0B;
+      color: white;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 2px 8px rgba(245,158,11,0.3);
+    }
+    .header h1 { font-size: 19px; font-weight: 700; flex: 1; }
+    .back-btn {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 22px;
+      cursor: pointer;
+      padding: 2px 6px 2px 0;
+      line-height: 1;
+    }
+    .map-btn {
+      background: rgba(255,255,255,0.25);
+      border: 1px solid rgba(255,255,255,0.5);
+      color: white;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* ── Scrollable content ── */
+    .content {
+      flex: 1;
+      padding: 16px;
+      padding-bottom: 90px;
+      overflow-y: auto;
+    }
+
+    /* ── FAB ── */
+    .fab {
+      position: fixed;
+      bottom: 28px;
+      right: 50%;
+      transform: translateX(50%);
+      max-width: 480px;
+      right: calc(50% - min(240px, 50vw));
+      width: 56px;
+      height: 56px;
+      background: #F59E0B;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      font-size: 30px;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(245,158,11,0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      line-height: 1;
+    }
+
+    /* ── Mead Cards ── */
+    .mead-card {
+      background: white;
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+      border: 1px solid #FDE68A;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: opacity 0.15s;
+    }
+    .mead-card:active { opacity: 0.7; }
+    .card-info { flex: 1; min-width: 0; }
+    .card-name { font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-brewery { font-size: 13px; color: #78716C; margin-top: 2px; }
+    .card-meta { font-size: 12px; color: #A8A29E; margin-top: 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .card-mini { width: 64px; height: 64px; flex-shrink: 0; }
+
+    /* ── Style Badges ── */
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+    .badge-traditional { background: #FEF3C7; color: #92400E; }
+    .badge-melomel     { background: #FEE2E2; color: #991B1B; }
+    .badge-metheglin   { background: #D1FAE5; color: #065F46; }
+    .badge-braggot     { background: #DBEAFE; color: #1E40AF; }
+    .badge-other       { background: #F3F4F6; color: #374151; }
+
+    /* ── Empty State ── */
+    .empty {
+      text-align: center;
+      padding: 64px 24px;
+      color: #A8A29E;
+    }
+    .empty .icon { font-size: 72px; margin-bottom: 16px; }
+    .empty p { font-size: 15px; line-height: 1.7; }
+
+    /* ── Section title ── */
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #A8A29E;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 8px;
+      margin-top: 4px;
+    }
+
+    /* ── Form ── */
+    .form-group { margin-bottom: 18px; }
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: #78716C;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    .form-input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid #FDE68A;
+      border-radius: 12px;
+      font-size: 16px;
+      background: white;
+      outline: none;
+      transition: border-color 0.2s;
+      font-family: inherit;
+    }
+    .form-input:focus { border-color: #F59E0B; }
+    textarea.form-input { min-height: 80px; resize: vertical; line-height: 1.5; }
+
+    /* ── Style Selector ── */
+    .style-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+    .style-pill {
+      padding: 8px 14px;
+      border-radius: 20px;
+      border: 1.5px solid #FDE68A;
+      background: white;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: #78716C;
+    }
+    .style-pill.selected {
+      background: #F59E0B;
+      border-color: #F59E0B;
+      color: white;
+    }
+
+    /* ── Quad Map ── */
+    .quad-wrap {
+      position: relative;
+      width: 100%;
+      padding-bottom: 100%;
+    }
+    .quad-canvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      border-radius: 14px;
+      border: 1.5px solid #FDE68A;
+      cursor: crosshair;
+      touch-action: none;
+    }
+    .quad-hint {
+      font-size: 11px;
+      color: #A8A29E;
+      text-align: center;
+      margin-top: 6px;
+    }
+
+    /* ── Sliders ── */
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .slider-label { font-size: 14px; width: 84px; flex-shrink: 0; color: #57534E; }
+    input[type=range] {
+      flex: 1;
+      -webkit-appearance: none;
+      height: 6px;
+      border-radius: 3px;
+      background: #FDE68A;
+      outline: none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #F59E0B;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(245,158,11,0.45);
+    }
+    .slider-val {
+      font-size: 17px;
+      font-weight: 700;
+      color: #D97706;
+      width: 20px;
+      text-align: right;
+    }
+
+    /* ── Radar card ── */
+    .chart-card {
+      background: white;
+      border-radius: 14px;
+      padding: 16px;
+      border: 1px solid #FDE68A;
+      margin-bottom: 16px;
+    }
+
+    /* ── Buttons ── */
+    .btn-primary {
+      width: 100%;
+      padding: 16px;
+      background: #F59E0B;
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .btn-primary:active { opacity: 0.8; }
+
+    .action-row { display: flex; gap: 10px; margin-bottom: 16px; }
+    .btn-edit {
+      flex: 1;
+      padding: 14px;
+      background: #F59E0B;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-delete {
+      padding: 14px 20px;
+      background: white;
+      color: #DC2626;
+      border: 1.5px solid #DC2626;
+      border-radius: 12px;
+      font-size: 16px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    /* ── Detail ── */
+    .detail-card {
+      background: white;
+      border-radius: 14px;
+      padding: 16px;
+      border: 1px solid #FDE68A;
+      margin-bottom: 16px;
+    }
+    .detail-name { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+    .detail-brewery { font-size: 14px; color: #78716C; }
+    .detail-date { font-size: 13px; color: #A8A29E; margin-top: 8px; }
+
+    /* ── Notes ── */
+    .notes-card {
+      background: white;
+      border-radius: 14px;
+      padding: 14px;
+      border: 1px solid #FDE68A;
+    }
+    .notes-text { font-size: 14px; line-height: 1.7; white-space: pre-wrap; color: #1C1917; }
+
+    /* ── Map legend ── */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      color: #78716C;
+    }
+    .legend-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════
+     HOME SCREEN
+════════════════════════════════ -->
+<div id="screen-home" class="screen active">
+  <div class="header">
+    <h1>🍯 Mead Log</h1>
+    <button class="map-btn" onclick="showScreen('map')">マップで見る</button>
+  </div>
+  <div class="content" id="home-list"></div>
+  <button class="fab" onclick="openAdd()" title="記録する">＋</button>
+</div>
+
+<!-- ═══════════════════════════════
+     MAP VIEW SCREEN
+════════════════════════════════ -->
+<div id="screen-map" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('home')">←</button>
+    <h1>味のマップ</h1>
+  </div>
+  <div class="content">
+    <div class="quad-wrap">
+      <canvas id="map-canvas" class="quad-canvas" style="cursor:default;"></canvas>
+    </div>
+    <div class="legend" id="map-legend"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════
+     ADD / EDIT SCREEN
+════════════════════════════════ -->
+<div id="screen-edit" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="cancelEdit()">←</button>
+    <h1 id="edit-title">ミードを記録</h1>
+  </div>
+  <div class="content">
+
+    <div class="form-group">
+      <label>ミード名 *</label>
+      <input type="text" class="form-input" id="f-name" placeholder="例: Orange Blossom Mead">
+    </div>
+
+    <div class="form-group">
+      <label>醸造元 / ブルワリー</label>
+      <input type="text" class="form-input" id="f-brewery" placeholder="例: Wild Blossom Meadery">
+    </div>
+
+    <div class="form-group">
+      <label>飲んだ日</label>
+      <input type="date" class="form-input" id="f-date">
+    </div>
+
+    <div class="form-group">
+      <label>スタイル</label>
+      <div class="style-pills">
+        <button class="style-pill" data-style="traditional" onclick="pickStyle(this)">トラディショナル</button>
+        <button class="style-pill" data-style="melomel"     onclick="pickStyle(this)">メロメル</button>
+        <button class="style-pill" data-style="metheglin"   onclick="pickStyle(this)">メテグリン</button>
+        <button class="style-pill" data-style="braggot"     onclick="pickStyle(this)">ブラゴット</button>
+        <button class="style-pill" data-style="other"       onclick="pickStyle(this)">その他</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>マップの位置（タップして指定）</label>
+      <div class="quad-wrap">
+        <canvas id="edit-canvas" class="quad-canvas"></canvas>
+      </div>
+      <p class="quad-hint">タップ / ドラッグで位置を指定してください</p>
+    </div>
+
+    <div class="form-group">
+      <label>テイスティング スコア</label>
+      <div class="chart-card">
+        <canvas id="edit-radar" height="200"></canvas>
+      </div>
+      <div id="sliders"></div>
+    </div>
+
+    <div class="form-group">
+      <label>コメント・メモ</label>
+      <textarea class="form-input" id="f-notes"
+        placeholder="香りの印象、合わせた料理、出会った場所など…"></textarea>
+    </div>
+
+    <button class="btn-primary" onclick="saveMead()">保存する</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════
+     DETAIL SCREEN
+════════════════════════════════ -->
+<div id="screen-detail" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('home')">←</button>
+    <h1>詳細</h1>
+  </div>
+  <div class="content">
+    <div class="detail-card">
+      <div class="detail-name" id="d-name"></div>
+      <div class="detail-brewery" id="d-brewery"></div>
+      <div style="margin-top:8px;"><span id="d-badge" class="badge"></span></div>
+      <div class="detail-date" id="d-date"></div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn-edit" onclick="openEdit(currentId)">編集</button>
+      <button class="btn-delete" onclick="deleteMead(currentId)">削除</button>
+    </div>
+
+    <p class="section-title">レーダーチャート</p>
+    <div class="chart-card">
+      <canvas id="detail-radar" height="220"></canvas>
+    </div>
+
+    <p class="section-title">マップ上の位置</p>
+    <div class="quad-wrap" style="margin-bottom:16px;">
+      <canvas id="detail-quad" class="quad-canvas" style="cursor:default;"></canvas>
+    </div>
+
+    <div id="d-notes-wrap" class="notes-card" style="display:none;">
+      <p class="section-title" style="margin-top:0;">コメント・メモ</p>
+      <p class="notes-text" id="d-notes"></p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════
+     JAVASCRIPT
+════════════════════════════════ -->
+<script>
+'use strict';
+
+/* ────────────────────────────────
+   DATA
+──────────────────────────────── */
+const KEY = 'meadLog_v2';
+const SCORE_KEYS   = ['sweetness','acidity','aroma','fruity','finish'];
+const SCORE_LABELS = ['甘み','酸味','香り','フルーティさ','余韻'];
+const STYLES = {
+  traditional: 'トラディショナル',
+  melomel:     'メロメル',
+  metheglin:   'メテグリン',
+  braggot:     'ブラゴット',
+  other:       'その他',
+};
+const DOT_COLORS = {
+  traditional: '#F59E0B',
+  melomel:     '#EF4444',
+  metheglin:   '#10B981',
+  braggot:     '#3B82F6',
+  other:       '#8B5CF6',
+};
+
+let meads = [];
+let currentId = null;
+
+// Edit state
+let editId     = null;
+let editPos    = { x: 0.5, y: 0.5 };
+let editStyle  = 'traditional';
+let editChart  = null;
+
+function load()  { try { meads = JSON.parse(localStorage.getItem(KEY)) || []; } catch { meads = []; } }
+function save()  { localStorage.setItem(KEY, JSON.stringify(meads)); }
+function uid()   { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+function esc(s)  { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+/* ────────────────────────────────
+   NAVIGATION
+──────────────────────────────── */
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  if (name === 'home') renderHome();
+  if (name === 'map')  { setTimeout(renderMapView, 60); }
+}
+
+/* ────────────────────────────────
+   HOME
+──────────────────────────────── */
+function renderHome() {
+  const el = document.getElementById('home-list');
+  if (!meads.length) {
+    el.innerHTML = `
+      <div class="empty">
+        <div class="icon">🍯</div>
+        <p>まだミードの記録がありません。<br>「＋」ボタンで最初の記録を追加しよう！</p>
+      </div>`;
+    return;
+  }
+
+  const sorted = [...meads].sort((a,b) => b.date.localeCompare(a.date));
+  el.innerHTML = sorted.map(m => `
+    <div class="mead-card" onclick="openDetail('${m.id}')">
+      <div class="card-info">
+        <div class="card-name">${esc(m.name)}</div>
+        <div class="card-brewery">${esc(m.brewery || '醸造元不明')}</div>
+        <div class="card-meta">
+          <span class="badge badge-${m.style}">${STYLES[m.style]||m.style}</span>
+          <span>${m.date}</span>
+        </div>
+      </div>
+      <canvas class="card-mini" id="mini-${m.id}" width="64" height="64"></canvas>
+    </div>`).join('');
+
+  setTimeout(() => sorted.forEach(m => drawMiniRadar(document.getElementById('mini-' + m.id), m.scores)), 30);
+}
+
+function drawMiniRadar(canvas, scores) {
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const cx = 32, cy = 32, r = 24, n = 5;
+
+  ctx.clearRect(0, 0, 64, 64);
+
+  // Grid rings
+  [0.25,0.5,0.75,1].forEach(s => {
+    ctx.beginPath();
+    ctx.strokeStyle = '#FDE68A';
+    ctx.lineWidth = 0.6;
+    for (let i = 0; i < n; i++) {
+      const a = (i/n)*Math.PI*2 - Math.PI/2;
+      const x = cx + Math.cos(a)*r*s, y = cy + Math.sin(a)*r*s;
+      i ? ctx.lineTo(x,y) : ctx.moveTo(x,y);
+    }
+    ctx.closePath(); ctx.stroke();
+  });
+
+  // Data polygon
+  ctx.beginPath();
+  ctx.fillStyle = 'rgba(245,158,11,0.25)';
+  ctx.strokeStyle = '#F59E0B';
+  ctx.lineWidth = 1.5;
+  SCORE_KEYS.forEach((k,i) => {
+    const v = ((scores[k]||3)-1)/4;
+    const a = (i/n)*Math.PI*2 - Math.PI/2;
+    const x = cx + Math.cos(a)*r*v, y = cy + Math.sin(a)*r*v;
+    i ? ctx.lineTo(x,y) : ctx.moveTo(x,y);
+  });
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+}
+
+/* ────────────────────────────────
+   DETAIL
+──────────────────────────────── */
+let detailChart = null;
+
+function openDetail(id) {
+  const m = meads.find(x => x.id === id);
+  if (!m) return;
+  currentId = id;
+
+  document.getElementById('d-name').textContent    = m.name;
+  document.getElementById('d-brewery').textContent = m.brewery || '';
+  document.getElementById('d-date').textContent    = m.date;
+
+  const badge = document.getElementById('d-badge');
+  badge.textContent = STYLES[m.style] || m.style;
+  badge.className   = `badge badge-${m.style}`;
+
+  const nw = document.getElementById('d-notes-wrap');
+  if (m.notes) {
+    nw.style.display = 'block';
+    document.getElementById('d-notes').textContent = m.notes;
+  } else {
+    nw.style.display = 'none';
+  }
+
+  showScreen('detail');
+  setTimeout(() => {
+    renderDetailRadar(m);
+    renderDetailQuad(m);
+  }, 80);
+}
+
+function renderDetailRadar(m) {
+  if (detailChart) { detailChart.destroy(); detailChart = null; }
+  detailChart = makeRadarChart('detail-radar', SCORE_KEYS.map(k => m.scores[k]||3));
+}
+
+function renderDetailQuad(m) {
+  const canvas = document.getElementById('detail-quad');
+  resizeCanvas(canvas);
+  const ctx = canvas.getContext('2d');
+  const w = canvas.getBoundingClientRect().width;
+  const h = canvas.getBoundingClientRect().height;
+  drawQuadBase(ctx, w, h);
+  drawDot(ctx, m.position.x * w, m.position.y * h, '#F59E0B', 13);
+}
+
+/* ────────────────────────────────
+   ADD / EDIT
+──────────────────────────────── */
+function openAdd() {
+  editId = null; editPos = {x:0.5, y:0.5}; editStyle = 'traditional';
+  document.getElementById('edit-title').textContent = 'ミードを記録';
+  document.getElementById('f-name').value    = '';
+  document.getElementById('f-brewery').value = '';
+  document.getElementById('f-date').value    = today();
+  document.getElementById('f-notes').value   = '';
+  document.querySelectorAll('.style-pill').forEach(b => b.classList.remove('selected'));
+  document.querySelector('.style-pill[data-style="traditional"]').classList.add('selected');
+  buildSliders([3,3,3,3,3]);
+  showScreen('edit');
+  setTimeout(() => { initEditCanvas(); initEditRadar([3,3,3,3,3]); }, 80);
+}
+
+function openEdit(id) {
+  const m = meads.find(x => x.id === id);
+  if (!m) return;
+  editId = id; editPos = {...m.position}; editStyle = m.style;
+  document.getElementById('edit-title').textContent = '編集';
+  document.getElementById('f-name').value    = m.name;
+  document.getElementById('f-brewery').value = m.brewery || '';
+  document.getElementById('f-date').value    = m.date;
+  document.getElementById('f-notes').value   = m.notes || '';
+  document.querySelectorAll('.style-pill').forEach(b => b.classList.remove('selected'));
+  document.querySelector(`.style-pill[data-style="${m.style}"]`).classList.add('selected');
+  const vals = SCORE_KEYS.map(k => m.scores[k]||3);
+  buildSliders(vals);
+  showScreen('edit');
+  setTimeout(() => { initEditCanvas(); initEditRadar(vals); }, 80);
+}
+
+function cancelEdit() { showScreen('home'); }
+
+function pickStyle(btn) {
+  document.querySelectorAll('.style-pill').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  editStyle = btn.dataset.style;
+}
+
+function buildSliders(vals) {
+  const wrap = document.getElementById('sliders');
+  wrap.innerHTML = SCORE_KEYS.map((k,i) => `
+    <div class="slider-row">
+      <span class="slider-label">${SCORE_LABELS[i]}</span>
+      <input type="range" id="s-${k}" min="1" max="5" value="${vals[i]}"
+        oninput="onSlider('${k}', this.value)">
+      <span class="slider-val" id="v-${k}">${vals[i]}</span>
+    </div>`).join('');
+}
+
+function onSlider(key, val) {
+  document.getElementById('v-' + key).textContent = val;
+  if (editChart) {
+    editChart.data.datasets[0].data = SCORE_KEYS.map(k => +document.getElementById('s-'+k).value);
+    editChart.update('none');
+  }
+}
+
+function saveMead() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { alert('ミード名を入力してください'); return; }
+
+  const scores = {};
+  SCORE_KEYS.forEach(k => scores[k] = +document.getElementById('s-'+k).value);
+
+  const m = {
+    id:       editId || uid(),
+    name,
+    brewery:  document.getElementById('f-brewery').value.trim(),
+    date:     document.getElementById('f-date').value || today(),
+    style:    editStyle,
+    position: {...editPos},
+    scores,
+    notes:    document.getElementById('f-notes').value.trim(),
+  };
+
+  if (editId) {
+    const i = meads.findIndex(x => x.id === editId);
+    if (i !== -1) meads[i] = m; else meads.push(m);
+  } else {
+    meads.push(m);
+  }
+  save();
+  if (editId) { currentId = editId; openDetail(currentId); }
+  else        { showScreen('home'); }
+}
+
+function deleteMead(id) {
+  const m = meads.find(x => x.id === id);
+  if (!m) return;
+  if (!confirm(`「${m.name}」を削除しますか？`)) return;
+  meads = meads.filter(x => x.id !== id);
+  save();
+  showScreen('home');
+}
+
+/* ────────────────────────────────
+   EDIT CANVAS (quad map)
+──────────────────────────────── */
+let editCanvas = null;
+let editCtx    = null;
+
+function initEditCanvas() {
+  editCanvas = document.getElementById('edit-canvas');
+  resizeCanvas(editCanvas);
+  editCtx = editCanvas.getContext('2d');
+  drawEditQuad();
+
+  editCanvas.addEventListener('click', handleEditTap);
+  editCanvas.addEventListener('touchend', e => {
+    e.preventDefault();
+    const t  = e.changedTouches[0];
+    const rc = editCanvas.getBoundingClientRect();
+    setEditPos((t.clientX - rc.left) / rc.width, (t.clientY - rc.top) / rc.height);
+  }, { passive: false });
+
+  // Drag support
+  let dragging = false;
+  editCanvas.addEventListener('mousedown', () => dragging = true);
+  editCanvas.addEventListener('mouseup',   () => dragging = false);
+  editCanvas.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const rc = editCanvas.getBoundingClientRect();
+    setEditPos((e.clientX - rc.left) / rc.width, (e.clientY - rc.top) / rc.height);
+  });
+  editCanvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const t  = e.touches[0];
+    const rc = editCanvas.getBoundingClientRect();
+    setEditPos((t.clientX - rc.left) / rc.width, (t.clientY - rc.top) / rc.height);
+  }, { passive: false });
+}
+
+function setEditPos(x, y) {
+  editPos = { x: Math.max(0.02, Math.min(0.98, x)), y: Math.max(0.02, Math.min(0.98, y)) };
+  drawEditQuad();
+}
+
+function drawEditQuad() {
+  const w = editCanvas.getBoundingClientRect().width;
+  const h = editCanvas.getBoundingClientRect().height;
+  editCtx.clearRect(0, 0, w, h);
+  drawQuadBase(editCtx, w, h);
+  drawDot(editCtx, editPos.x * w, editPos.y * h, '#F59E0B', 11);
+}
+
+/* ────────────────────────────────
+   RADAR CHART (edit)
+──────────────────────────────── */
+function initEditRadar(vals) {
+  if (editChart) { editChart.destroy(); editChart = null; }
+  editChart = makeRadarChart('edit-radar', vals);
+}
+
+function makeRadarChart(canvasId, data) {
+  return new Chart(document.getElementById(canvasId), {
+    type: 'radar',
+    data: {
+      labels: SCORE_LABELS,
+      datasets: [{
+        data,
+        backgroundColor: 'rgba(245,158,11,0.18)',
+        borderColor: '#F59E0B',
+        borderWidth: 2,
+        pointBackgroundColor: '#F59E0B',
+        pointRadius: 5,
+        pointHoverRadius: 7,
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        r: {
+          min: 0, max: 5,
+          ticks: { stepSize: 1, display: false },
+          grid:       { color: '#FDE68A' },
+          angleLines: { color: '#FDE68A' },
+          pointLabels: {
+            font: { size: 13, weight: '600' },
+            color: '#78350F',
+          },
+        }
+      },
+      plugins: { legend: { display: false } },
+      animation: { duration: 200 },
+    }
+  });
+}
+
+/* ────────────────────────────────
+   MAP VIEW
+──────────────────────────────── */
+function renderMapView() {
+  const canvas = document.getElementById('map-canvas');
+  resizeCanvas(canvas);
+  const ctx = canvas.getContext('2d');
+  const rc  = canvas.getBoundingClientRect();
+  const w   = rc.width, h = rc.height;
+
+  drawQuadBase(ctx, w, h);
+
+  meads.forEach(m => {
+    const color = DOT_COLORS[m.style] || '#F59E0B';
+    const px = m.position.x * w;
+    const py = m.position.y * h;
+    drawDot(ctx, px, py, color, 9);
+
+    // Label
+    ctx.save();
+    ctx.font = `${Math.round(w*0.033)}px -apple-system, sans-serif`;
+    ctx.fillStyle = '#1C1917';
+    ctx.textAlign  = 'center';
+    ctx.textBaseline = 'top';
+    const label = m.name.length > 7 ? m.name.slice(0,7) + '…' : m.name;
+    ctx.fillText(label, px, py + 12);
+    ctx.restore();
+  });
+
+  // Tap to detail
+  canvas.onclick = e => {
+    const rc2 = canvas.getBoundingClientRect();
+    const mx = e.clientX - rc2.left;
+    const my = e.clientY - rc2.top;
+    let best = null, bestD = 35;
+    meads.forEach(m => {
+      const d = Math.hypot(m.position.x * w - mx, m.position.y * h - my);
+      if (d < bestD) { bestD = d; best = m; }
+    });
+    if (best) openDetail(best.id);
+  };
+
+  // Legend
+  const leg = document.getElementById('map-legend');
+  const used = [...new Set(meads.map(m => m.style))];
+  leg.innerHTML = used.map(s => `
+    <div class="legend-item">
+      <div class="legend-dot" style="background:${DOT_COLORS[s]||'#999'}"></div>
+      <span>${STYLES[s]||s}</span>
+    </div>`).join('');
+}
+
+/* ────────────────────────────────
+   QUAD MAP DRAWING HELPERS
+──────────────────────────────── */
+function resizeCanvas(canvas) {
+  const rc  = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width  = rc.width  * dpr;
+  canvas.height = rc.height * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+}
+
+function drawQuadBase(ctx, w, h) {
+  // BG
+  ctx.fillStyle = '#FFFDF7';
+  ctx.fillRect(0, 0, w, h);
+
+  // Quadrant tints
+  const tints = [
+    ['#FFFDE7', 0,   0],    // top-left:  dry   + floral
+    ['#FFF8E1', w/2, 0],    // top-right: sweet + floral
+    ['#FFF3E0', 0,   h/2],  // btm-left:  dry   + subtle
+    ['#FEF9C3', w/2, h/2],  // btm-right: sweet + subtle
+  ];
+  tints.forEach(([c,x,y]) => {
+    ctx.fillStyle = c;
+    ctx.fillRect(x, y, w/2, h/2);
+  });
+
+  // Dashed grid
+  ctx.save();
+  ctx.strokeStyle = '#FDE68A';
+  ctx.lineWidth   = 1;
+  ctx.setLineDash([5,5]);
+  ctx.beginPath();
+  ctx.moveTo(w/2, 0); ctx.lineTo(w/2, h);
+  ctx.moveTo(0, h/2); ctx.lineTo(w, h/2);
+  ctx.stroke();
+  ctx.restore();
+
+  // Solid axes
+  ctx.strokeStyle = '#D97706';
+  ctx.lineWidth   = 1.5;
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(w/2, 4); ctx.lineTo(w/2, h-4);
+  ctx.moveTo(4, h/2); ctx.lineTo(w-4, h/2);
+  ctx.stroke();
+
+  // Arrow tips
+  const arr = (x, y, dir) => {
+    const s = 5;
+    ctx.beginPath();
+    ctx.fillStyle = '#D97706';
+    if (dir === 'up')    { ctx.moveTo(x,y-s); ctx.lineTo(x-s,y+s); ctx.lineTo(x+s,y+s); }
+    if (dir === 'down')  { ctx.moveTo(x,y+s); ctx.lineTo(x-s,y-s); ctx.lineTo(x+s,y-s); }
+    if (dir === 'left')  { ctx.moveTo(x-s,y); ctx.lineTo(x+s,y-s); ctx.lineTo(x+s,y+s); }
+    if (dir === 'right') { ctx.moveTo(x+s,y); ctx.lineTo(x-s,y-s); ctx.lineTo(x-s,y+s); }
+    ctx.closePath(); ctx.fill();
+  };
+  arr(w/2, 5,   'up');
+  arr(w/2, h-5, 'down');
+  arr(5,   h/2, 'left');
+  arr(w-5, h/2, 'right');
+
+  // Axis labels
+  const fs = Math.max(11, Math.round(w * 0.038));
+  ctx.font = `700 ${fs}px -apple-system, sans-serif`;
+  ctx.fillStyle = '#92400E';
+
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ctx.fillText('蜂蜜感 強い', w/2, 8);
+
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('蜂蜜感 弱い', w/2, h - 8);
+
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillText('辛口', 10, h/2);
+
+  ctx.textAlign = 'right';
+  ctx.fillText('甘口', w - 10, h/2);
+
+  // Sub-labels
+  const sf = Math.max(9, Math.round(w * 0.028));
+  ctx.font = `${sf}px -apple-system, sans-serif`;
+  ctx.fillStyle = '#C4A04A';
+
+  ctx.textAlign = 'left';   ctx.textBaseline = 'top';
+  ctx.fillText('ドライ×フローラル', 8, 8 + fs + 2);
+
+  ctx.textAlign = 'right';  ctx.textBaseline = 'top';
+  ctx.fillText('スウィート×フローラル', w - 8, 8 + fs + 2);
+
+  ctx.textAlign = 'left';   ctx.textBaseline = 'bottom';
+  ctx.fillText('ドライ×サブトル', 8, h - 8 - fs - 2);
+
+  ctx.textAlign = 'right';  ctx.textBaseline = 'bottom';
+  ctx.fillText('スウィート×サブトル', w - 8, h - 8 - fs - 2);
+}
+
+function drawDot(ctx, px, py, color, r) {
+  ctx.save();
+  ctx.shadowColor = color;
+  ctx.shadowBlur  = 10;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(px, py, r, 0, Math.PI*2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'white';
+  ctx.beginPath();
+  ctx.arc(px, py, r * 0.35, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
+
+/* ────────────────────────────────
+   UTILS
+──────────────────────────────── */
+function today() {
+  const d = new Date();
+  return d.toISOString().slice(0, 10);
+}
+
+/* ────────────────────────────────
+   INIT
+──────────────────────────────── */
+load();
+renderHome();
+</script>
+</body>
+</html>
