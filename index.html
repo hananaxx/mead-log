@@ -159,9 +159,9 @@
     .style-pill.selected { background: #F59E0B; border-color: #F59E0B; color: white; }
 
     /* ── Quad Map ── */
-    .quad-wrap { position: relative; width: 100%; padding-bottom: 100%; }
+    .quad-wrap { width: 100%; }
     .quad-canvas {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      display: block; width: 100%; aspect-ratio: 1;
       border-radius: 14px; border: 1.5px solid #FDE68A;
       cursor: crosshair; touch-action: none;
     }
@@ -636,10 +636,9 @@ function renderDetailQuad(m) {
   const canvas = document.getElementById('detail-quad');
   resizeCanvas(canvas);
   const ctx = canvas.getContext('2d');
-  const w = canvas.getBoundingClientRect().width;
-  const h = canvas.getBoundingClientRect().height;
-  drawQuadBase(ctx, w, h);
-  drawDot(ctx, m.position.x * w, m.position.y * h, '#F59E0B', 13);
+  const w = canvas.offsetWidth || 300;
+  drawQuadBase(ctx, w, w);
+  drawDot(ctx, m.position.x * w, m.position.y * w, '#F59E0B', 13);
 }
 
 /* ────────────────────────────────
@@ -795,11 +794,10 @@ function setEditPos(x, y) {
 }
 
 function drawEditQuad() {
-  const w = editCanvas.getBoundingClientRect().width;
-  const h = editCanvas.getBoundingClientRect().height;
-  editCtx.clearRect(0, 0, w, h);
-  drawQuadBase(editCtx, w, h);
-  drawDot(editCtx, editPos.x * w, editPos.y * h, '#F59E0B', 11);
+  const w = editCanvas.offsetWidth || 300;
+  editCtx.clearRect(0, 0, w, w);
+  drawQuadBase(editCtx, w, w);
+  drawDot(editCtx, editPos.x * w, editPos.y * w, '#F59E0B', 11);
 }
 
 /* ────────────────────────────────
@@ -845,8 +843,7 @@ function renderMapView() {
   const canvas = document.getElementById('map-canvas');
   resizeCanvas(canvas);
   const ctx = canvas.getContext('2d');
-  const rc = canvas.getBoundingClientRect();
-  const w = rc.width, h = rc.height;
+  const w = canvas.offsetWidth || 300, h = w;
 
   drawQuadBase(ctx, w, h);
 
@@ -885,10 +882,10 @@ function renderMapView() {
    CANVAS HELPERS
 ──────────────────────────────── */
 function resizeCanvas(canvas) {
-  const rc = canvas.getBoundingClientRect();
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width  = rc.width  * dpr;
-  canvas.height = rc.height * dpr;
+  const size = canvas.offsetWidth || canvas.parentElement.offsetWidth || 300;
+  const dpr  = window.devicePixelRatio || 1;
+  canvas.width  = size * dpr;
+  canvas.height = size * dpr;
   canvas.getContext('2d').scale(dpr, dpr);
 }
 
