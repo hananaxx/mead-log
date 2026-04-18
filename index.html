@@ -231,9 +231,77 @@
     .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
     .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #78716C; }
     .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── Lock screen ── */
+    #lock-screen {
+      position: fixed; inset: 0; z-index: 100;
+      background: #FFFBEB;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 24px; padding: 32px;
+    }
+    .lock-icon  { font-size: 64px; }
+    .lock-title { font-size: 22px; font-weight: 700; color: #92400E; }
+    .lock-sub   { font-size: 14px; color: #A8A29E; margin-top: -16px; }
+    .pin-dots {
+      display: flex; gap: 16px;
+    }
+    .pin-dot {
+      width: 18px; height: 18px; border-radius: 50%;
+      border: 2px solid #FDE68A; background: white;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .pin-dot.filled { background: #F59E0B; border-color: #F59E0B; }
+    .pin-keypad {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 12px; width: 100%; max-width: 280px;
+    }
+    .pin-key {
+      padding: 18px 0; border-radius: 14px;
+      border: 1.5px solid #FDE68A; background: white;
+      font-size: 22px; font-weight: 600; color: #1C1917;
+      cursor: pointer; transition: background 0.1s;
+      text-align: center;
+    }
+    .pin-key:active { background: #FEF3C7; }
+    .pin-key.del    { font-size: 18px; color: #78716C; }
+    .lock-error {
+      font-size: 14px; color: #DC2626; font-weight: 600;
+      min-height: 20px;
+    }
   </style>
 </head>
 <body>
+
+<!-- ═══════════════════════════════
+     LOCK SCREEN
+════════════════════════════════ -->
+<div id="lock-screen">
+  <div class="lock-icon">🍯</div>
+  <div class="lock-title">Mead Log</div>
+  <div class="lock-sub">PINを入力してください</div>
+  <div class="pin-dots">
+    <div class="pin-dot" id="dot-0"></div>
+    <div class="pin-dot" id="dot-1"></div>
+    <div class="pin-dot" id="dot-2"></div>
+    <div class="pin-dot" id="dot-3"></div>
+  </div>
+  <div class="lock-error" id="lock-error"></div>
+  <div class="pin-keypad">
+    <button class="pin-key" onclick="pinInput('1')">1</button>
+    <button class="pin-key" onclick="pinInput('2')">2</button>
+    <button class="pin-key" onclick="pinInput('3')">3</button>
+    <button class="pin-key" onclick="pinInput('4')">4</button>
+    <button class="pin-key" onclick="pinInput('5')">5</button>
+    <button class="pin-key" onclick="pinInput('6')">6</button>
+    <button class="pin-key" onclick="pinInput('7')">7</button>
+    <button class="pin-key" onclick="pinInput('8')">8</button>
+    <button class="pin-key" onclick="pinInput('9')">9</button>
+    <div></div>
+    <button class="pin-key" onclick="pinInput('0')">0</button>
+    <button class="pin-key del" onclick="pinDelete()">⌫</button>
+  </div>
+</div>
 
 <!-- ═══════════════════════════════
      HOME SCREEN
@@ -948,10 +1016,52 @@ function drawDot(ctx, px, py, color, r) {
 function today() { return new Date().toISOString().slice(0,10); }
 
 /* ────────────────────────────────
+   PIN LOCK
+──────────────────────────────── */
+const _p = [49,49,55,50].map(c=>String.fromCharCode(c)).join('');
+let pinEntry = '';
+
+function pinInput(d) {
+  if (pinEntry.length >= 4) return;
+  pinEntry += d;
+  updateDots();
+  if (pinEntry.length === 4) checkPin();
+}
+
+function pinDelete() {
+  pinEntry = pinEntry.slice(0, -1);
+  updateDots();
+  document.getElementById('lock-error').textContent = '';
+}
+
+function updateDots() {
+  for (let i = 0; i < 4; i++) {
+    document.getElementById('dot-' + i).classList.toggle('filled', i < pinEntry.length);
+  }
+}
+
+function checkPin() {
+  if (pinEntry === _p) {
+    sessionStorage.setItem('ml_ok', '1');
+    document.getElementById('lock-screen').style.display = 'none';
+  } else {
+    document.getElementById('lock-error').textContent = '番号が違います';
+    pinEntry = '';
+    setTimeout(() => {
+      updateDots();
+      document.getElementById('lock-error').textContent = '';
+    }, 800);
+  }
+}
+
+/* ────────────────────────────────
    INIT
 ──────────────────────────────── */
 load();
 renderHome();
+if (sessionStorage.getItem('ml_ok') === '1') {
+  document.getElementById('lock-screen').style.display = 'none';
+}
 </script>
 </body>
 </html>
