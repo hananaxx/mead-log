@@ -752,15 +752,14 @@ let editCanvas = null;
 let editCtx    = null;
 
 function initEditCanvas() {
-  editCanvas = document.getElementById('edit-canvas');
-  resizeCanvas(editCanvas);
-  editCtx = editCanvas.getContext('2d');
-  drawEditQuad();
-
-  // Remove old listeners by cloning
-  const newCanvas = editCanvas.cloneNode(true);
-  editCanvas.parentNode.replaceChild(newCanvas, editCanvas);
+  // クローンで古いイベントリスナーを除去してから resize → draw
+  const old = document.getElementById('edit-canvas');
+  const newCanvas = old.cloneNode(false);
+  newCanvas.id = 'edit-canvas';
+  old.parentNode.replaceChild(newCanvas, old);
   editCanvas = newCanvas;
+
+  resizeCanvas(editCanvas);
   editCtx = editCanvas.getContext('2d');
   drawEditQuad();
 
