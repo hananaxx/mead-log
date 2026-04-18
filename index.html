@@ -7,9 +7,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
     html { overflow-x: hidden; }
-
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic UI', sans-serif;
       background: #FFFBEB;
@@ -39,83 +37,51 @@
     }
     .header h1 { font-size: 19px; font-weight: 700; flex: 1; }
     .back-btn {
-      background: none;
-      border: none;
-      color: white;
-      font-size: 22px;
-      cursor: pointer;
-      padding: 2px 6px 2px 0;
-      line-height: 1;
+      background: none; border: none; color: white;
+      font-size: 22px; cursor: pointer; padding: 2px 6px 2px 0; line-height: 1;
     }
     .map-btn {
       background: rgba(255,255,255,0.25);
       border: 1px solid rgba(255,255,255,0.5);
-      color: white;
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
+      color: white; padding: 6px 14px; border-radius: 20px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
     }
 
-    /* ── Scrollable content ── */
-    .content {
-      flex: 1;
-      padding: 16px;
-      padding-bottom: 90px;
-      overflow-y: auto;
-    }
+    /* ── Content ── */
+    .content { flex: 1; padding: 16px; padding-bottom: 90px; overflow-y: auto; }
 
     /* ── FAB ── */
     .fab {
-      position: fixed;
-      bottom: 28px;
-      right: 20px;
-      width: 56px;
-      height: 56px;
-      background: #F59E0B;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      font-size: 30px;
-      cursor: pointer;
+      position: fixed; bottom: 28px; right: 20px;
+      width: 56px; height: 56px; background: #F59E0B; color: white;
+      border: none; border-radius: 50%; font-size: 30px; cursor: pointer;
       box-shadow: 0 4px 16px rgba(245,158,11,0.55);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 20;
-      line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 20; line-height: 1;
     }
 
     /* ── Mead Cards ── */
     .mead-card {
-      background: white;
-      border-radius: 14px;
-      padding: 14px;
-      margin-bottom: 12px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
-      border: 1px solid #FDE68A;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      transition: opacity 0.15s;
+      background: white; border-radius: 14px; padding: 12px;
+      margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+      border: 1px solid #FDE68A; cursor: pointer;
+      display: flex; align-items: center; gap: 12px; transition: opacity 0.15s;
     }
     .mead-card:active { opacity: 0.7; }
+    .card-thumb {
+      width: 64px; height: 64px; border-radius: 10px;
+      object-fit: cover; flex-shrink: 0; background: #FEF3C7;
+    }
+    .card-thumb-placeholder {
+      width: 64px; height: 64px; flex-shrink: 0;
+    }
     .card-info { flex: 1; min-width: 0; }
     .card-name { font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .card-brewery { font-size: 13px; color: #78716C; margin-top: 2px; }
     .card-meta { font-size: 12px; color: #A8A29E; margin-top: 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .card-mini { width: 64px; height: 64px; flex-shrink: 0; }
 
-    /* ── Style Badges ── */
-    .badge {
-      display: inline-block;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 10px;
-    }
+    /* ── Badges ── */
+    .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
     .badge-traditional { background: #FEF3C7; color: #92400E; }
     .badge-melomel     { background: #FEE2E2; color: #991B1B; }
     .badge-metheglin   { background: #D1FAE5; color: #065F46; }
@@ -123,211 +89,148 @@
     .badge-other       { background: #F3F4F6; color: #374151; }
 
     /* ── Empty State ── */
-    .empty {
-      text-align: center;
-      padding: 64px 24px;
-      color: #A8A29E;
-    }
+    .empty { text-align: center; padding: 64px 24px; color: #A8A29E; }
     .empty .icon { font-size: 72px; margin-bottom: 16px; }
     .empty p { font-size: 15px; line-height: 1.7; }
 
     /* ── Section title ── */
     .section-title {
-      font-size: 11px;
-      font-weight: 700;
-      color: #A8A29E;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      margin-bottom: 8px;
-      margin-top: 4px;
+      font-size: 11px; font-weight: 700; color: #A8A29E;
+      text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; margin-top: 4px;
     }
 
     /* ── Form ── */
     .form-group { margin-bottom: 18px; }
     .form-group label {
-      display: block;
-      font-size: 12px;
-      font-weight: 700;
-      color: #78716C;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 6px;
+      display: block; font-size: 12px; font-weight: 700; color: #78716C;
+      text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;
     }
     .form-input {
-      width: 100%;
-      padding: 12px 14px;
-      border: 1.5px solid #FDE68A;
-      border-radius: 12px;
-      font-size: 16px;
-      background: white;
-      outline: none;
-      transition: border-color 0.2s;
-      font-family: inherit;
+      width: 100%; padding: 12px 14px; border: 1.5px solid #FDE68A;
+      border-radius: 12px; font-size: 16px; background: white;
+      outline: none; transition: border-color 0.2s; font-family: inherit;
     }
     .form-input:focus { border-color: #F59E0B; }
     textarea.form-input { min-height: 80px; resize: vertical; line-height: 1.5; }
 
+    /* ── Photo input ── */
+    .photo-zone {
+      position: relative;
+      width: 100%;
+      border-radius: 14px;
+      border: 2px dashed #FDE68A;
+      background: #FFFDF7;
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .photo-zone:active { border-color: #F59E0B; }
+    .photo-zone input[type=file] {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      opacity: 0; cursor: pointer; z-index: 2;
+    }
+    .photo-zone-inner {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 24px; gap: 6px; pointer-events: none;
+    }
+    .photo-zone-inner .pz-icon { font-size: 36px; }
+    .photo-zone-inner .pz-text { font-size: 14px; color: #92400E; font-weight: 600; }
+    .photo-zone-inner .pz-sub  { font-size: 12px; color: #A8A29E; }
+    .photo-preview-img {
+      width: 100%; max-height: 220px;
+      object-fit: cover; border-radius: 12px;
+      display: none;
+    }
+    .photo-remove-btn {
+      display: none; width: 100%; margin-top: 8px;
+      padding: 8px; background: white; color: #DC2626;
+      border: 1.5px solid #DC2626; border-radius: 10px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+
     /* ── Style Selector ── */
     .style-pills { display: flex; gap: 8px; flex-wrap: wrap; }
     .style-pill {
-      padding: 8px 14px;
-      border-radius: 20px;
-      border: 1.5px solid #FDE68A;
-      background: white;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s;
-      color: #78716C;
+      padding: 8px 14px; border-radius: 20px; border: 1.5px solid #FDE68A;
+      background: white; font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: all 0.15s; color: #78716C;
     }
-    .style-pill.selected {
-      background: #F59E0B;
-      border-color: #F59E0B;
-      color: white;
-    }
+    .style-pill.selected { background: #F59E0B; border-color: #F59E0B; color: white; }
 
     /* ── Quad Map ── */
-    .quad-wrap {
-      position: relative;
-      width: 100%;
-      padding-bottom: 100%;
-    }
+    .quad-wrap { position: relative; width: 100%; padding-bottom: 100%; }
     .quad-canvas {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      border-radius: 14px;
-      border: 1.5px solid #FDE68A;
-      cursor: crosshair;
-      touch-action: none;
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      border-radius: 14px; border: 1.5px solid #FDE68A;
+      cursor: crosshair; touch-action: none;
     }
-    .quad-hint {
-      font-size: 11px;
-      color: #A8A29E;
-      text-align: center;
-      margin-top: 6px;
-    }
+    .quad-hint { font-size: 11px; color: #A8A29E; text-align: center; margin-top: 6px; }
 
     /* ── Sliders ── */
-    .slider-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
+    .slider-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
     .slider-label { font-size: 14px; width: 84px; flex-shrink: 0; color: #57534E; }
     input[type=range] {
-      flex: 1;
-      -webkit-appearance: none;
-      height: 6px;
-      border-radius: 3px;
-      background: #FDE68A;
-      outline: none;
+      flex: 1; -webkit-appearance: none; height: 6px;
+      border-radius: 3px; background: #FDE68A; outline: none;
     }
     input[type=range]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      background: #F59E0B;
-      cursor: pointer;
-      box-shadow: 0 2px 8px rgba(245,158,11,0.45);
+      -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%;
+      background: #F59E0B; cursor: pointer; box-shadow: 0 2px 8px rgba(245,158,11,0.45);
     }
-    .slider-val {
-      font-size: 17px;
-      font-weight: 700;
-      color: #D97706;
-      width: 20px;
-      text-align: right;
-    }
+    .slider-val { font-size: 17px; font-weight: 700; color: #D97706; width: 20px; text-align: right; }
 
-    /* ── Radar card ── */
+    /* ── Cards ── */
     .chart-card {
-      background: white;
-      border-radius: 14px;
-      padding: 16px;
-      border: 1px solid #FDE68A;
-      margin-bottom: 16px;
+      background: white; border-radius: 14px; padding: 16px;
+      border: 1px solid #FDE68A; margin-bottom: 16px;
     }
 
     /* ── Buttons ── */
     .btn-primary {
-      width: 100%;
-      padding: 16px;
-      background: #F59E0B;
-      color: white;
-      border: none;
-      border-radius: 14px;
-      font-size: 17px;
-      font-weight: 700;
-      cursor: pointer;
-      margin-top: 8px;
+      width: 100%; padding: 16px; background: #F59E0B; color: white;
+      border: none; border-radius: 14px; font-size: 17px; font-weight: 700;
+      cursor: pointer; margin-top: 8px;
     }
     .btn-primary:active { opacity: 0.8; }
-
     .action-row { display: flex; gap: 10px; margin-bottom: 16px; }
     .btn-edit {
-      flex: 1;
-      padding: 14px;
-      background: #F59E0B;
-      color: white;
-      border: none;
-      border-radius: 12px;
-      font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
+      flex: 1; padding: 14px; background: #F59E0B; color: white;
+      border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer;
     }
     .btn-delete {
-      padding: 14px 20px;
-      background: white;
-      color: #DC2626;
-      border: 1.5px solid #DC2626;
-      border-radius: 12px;
-      font-size: 16px;
-      cursor: pointer;
-      font-weight: 600;
+      padding: 14px 20px; background: white; color: #DC2626;
+      border: 1.5px solid #DC2626; border-radius: 12px;
+      font-size: 16px; cursor: pointer; font-weight: 600;
     }
 
     /* ── Detail ── */
-    .detail-card {
-      background: white;
-      border-radius: 14px;
-      padding: 16px;
-      border: 1px solid #FDE68A;
-      margin-bottom: 16px;
+    .detail-photo {
+      width: 100%; max-height: 240px; object-fit: cover;
+      border-radius: 14px; margin-bottom: 12px; display: none;
     }
-    .detail-name { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+    .detail-card {
+      background: white; border-radius: 14px; padding: 16px;
+      border: 1px solid #FDE68A; margin-bottom: 16px;
+    }
+    .detail-name    { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
     .detail-brewery { font-size: 14px; color: #78716C; }
-    .detail-date { font-size: 13px; color: #A8A29E; margin-top: 8px; }
+    .detail-date    { font-size: 13px; color: #A8A29E; margin-top: 8px; }
+    .detail-url {
+      display: inline-flex; align-items: center; gap: 5px;
+      margin-top: 10px; font-size: 13px; color: #D97706;
+      font-weight: 600; text-decoration: none; word-break: break-all;
+    }
+    .detail-url:active { opacity: 0.7; }
 
     /* ── Notes ── */
-    .notes-card {
-      background: white;
-      border-radius: 14px;
-      padding: 14px;
-      border: 1px solid #FDE68A;
-    }
+    .notes-card { background: white; border-radius: 14px; padding: 14px; border: 1px solid #FDE68A; }
     .notes-text { font-size: 14px; line-height: 1.7; white-space: pre-wrap; color: #1C1917; }
 
     /* ── Map legend ── */
-    .legend {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 10px;
-    }
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 12px;
-      color: #78716C;
-    }
-    .legend-dot {
-      width: 10px; height: 10px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
+    .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+    .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #78716C; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
   </style>
 </head>
 <body>
@@ -370,6 +273,22 @@
   </div>
   <div class="content">
 
+    <!-- 写真 -->
+    <div class="form-group">
+      <label>写真（ラベルや外観）</label>
+      <div class="photo-zone" id="photo-zone">
+        <input type="file" accept="image/*" capture="environment" id="f-photo" onchange="handlePhoto(this)">
+        <div class="photo-zone-inner" id="photo-placeholder">
+          <div class="pz-icon">📷</div>
+          <div class="pz-text">タップして撮影 / 選択</div>
+          <div class="pz-sub">ボトルのラベルを記録しておこう</div>
+        </div>
+        <img id="photo-preview-img" class="photo-preview-img" alt="プレビュー">
+      </div>
+      <button class="photo-remove-btn" id="photo-remove-btn" onclick="removePhoto()">写真を削除</button>
+    </div>
+
+    <!-- 基本情報 -->
     <div class="form-group">
       <label>ミード名 *</label>
       <input type="text" class="form-input" id="f-name" placeholder="例: Orange Blossom Mead">
@@ -378,6 +297,11 @@
     <div class="form-group">
       <label>醸造元 / ブルワリー</label>
       <input type="text" class="form-input" id="f-brewery" placeholder="例: Wild Blossom Meadery">
+    </div>
+
+    <div class="form-group">
+      <label>醸造元のURL（公式サイトなど）</label>
+      <input type="url" class="form-input" id="f-url" placeholder="https://example.com">
     </div>
 
     <div class="form-group">
@@ -431,15 +355,22 @@
     <h1>詳細</h1>
   </div>
   <div class="content">
+
+    <!-- 写真（あれば） -->
+    <img id="d-photo" class="detail-photo" alt="ラベル写真">
+
     <div class="detail-card">
-      <div class="detail-name" id="d-name"></div>
+      <div class="detail-name"    id="d-name"></div>
       <div class="detail-brewery" id="d-brewery"></div>
       <div style="margin-top:8px;"><span id="d-badge" class="badge"></span></div>
-      <div class="detail-date" id="d-date"></div>
+      <div class="detail-date"    id="d-date"></div>
+      <a id="d-url" class="detail-url" href="#" target="_blank" rel="noopener" style="display:none;">
+        🔗 <span id="d-url-text"></span>
+      </a>
     </div>
 
     <div class="action-row">
-      <button class="btn-edit" onclick="openEdit(currentId)">編集</button>
+      <button class="btn-edit"   onclick="openEdit(currentId)">編集</button>
       <button class="btn-delete" onclick="deleteMead(currentId)">削除</button>
     </div>
 
@@ -487,19 +418,85 @@ const DOT_COLORS = {
   other:       '#8B5CF6',
 };
 
-let meads = [];
+let meads     = [];
 let currentId = null;
 
 // Edit state
-let editId     = null;
-let editPos    = { x: 0.5, y: 0.5 };
-let editStyle  = 'traditional';
-let editChart  = null;
+let editId    = null;
+let editPos   = { x: 0.5, y: 0.5 };
+let editStyle = 'traditional';
+let editChart = null;
+let editPhoto = null;  // base64 or null
 
-function load()  { try { meads = JSON.parse(localStorage.getItem(KEY)) || []; } catch { meads = []; } }
-function save()  { localStorage.setItem(KEY, JSON.stringify(meads)); }
-function uid()   { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
-function esc(s)  { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function load() { try { meads = JSON.parse(localStorage.getItem(KEY)) || []; } catch { meads = []; } }
+function save() {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(meads));
+  } catch(e) {
+    alert('保存容量が不足しています。古い記録を削除するか、写真のサイズを小さくしてください。');
+  }
+}
+function uid()  { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+/* ────────────────────────────────
+   PHOTO HANDLING
+──────────────────────────────── */
+function handlePhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  compressImage(file, base64 => {
+    editPhoto = base64;
+    showPhotoPreview(base64);
+  });
+}
+
+function compressImage(file, callback) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 900;
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) {
+        if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+        else       { w = Math.round(w * MAX / h); h = MAX; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      callback(canvas.toDataURL('image/jpeg', 0.78));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function showPhotoPreview(base64) {
+  const placeholder = document.getElementById('photo-placeholder');
+  const preview     = document.getElementById('photo-preview-img');
+  const removeBtn   = document.getElementById('photo-remove-btn');
+  placeholder.style.display = 'none';
+  preview.src = base64;
+  preview.style.display = 'block';
+  removeBtn.style.display = 'block';
+}
+
+function clearPhotoPreview() {
+  const placeholder = document.getElementById('photo-placeholder');
+  const preview     = document.getElementById('photo-preview-img');
+  const removeBtn   = document.getElementById('photo-remove-btn');
+  placeholder.style.display = 'flex';
+  preview.style.display = 'none';
+  preview.src = '';
+  removeBtn.style.display = 'none';
+  document.getElementById('f-photo').value = '';
+}
+
+function removePhoto() {
+  editPhoto = null;
+  clearPhotoPreview();
+}
 
 /* ────────────────────────────────
    NAVIGATION
@@ -508,7 +505,7 @@ function showScreen(name) {
   document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
   document.getElementById('screen-' + name).classList.add('active');
   if (name === 'home') renderHome();
-  if (name === 'map')  { setTimeout(renderMapView, 60); }
+  if (name === 'map')  setTimeout(renderMapView, 60);
 }
 
 /* ────────────────────────────────
@@ -526,34 +523,40 @@ function renderHome() {
   }
 
   const sorted = [...meads].sort((a,b) => b.date.localeCompare(a.date));
-  el.innerHTML = sorted.map(m => `
-    <div class="mead-card" onclick="openDetail('${m.id}')">
-      <div class="card-info">
-        <div class="card-name">${esc(m.name)}</div>
-        <div class="card-brewery">${esc(m.brewery || '醸造元不明')}</div>
-        <div class="card-meta">
-          <span class="badge badge-${m.style}">${STYLES[m.style]||m.style}</span>
-          <span>${m.date}</span>
+  el.innerHTML = sorted.map(m => {
+    const thumb = m.photo
+      ? `<img class="card-thumb" src="${m.photo}" alt="ラベル">`
+      : `<canvas class="card-thumb-placeholder" id="mini-${m.id}" width="64" height="64"></canvas>`;
+    return `
+      <div class="mead-card" onclick="openDetail('${m.id}')">
+        ${thumb}
+        <div class="card-info">
+          <div class="card-name">${esc(m.name)}</div>
+          <div class="card-brewery">${esc(m.brewery || '醸造元不明')}</div>
+          <div class="card-meta">
+            <span class="badge badge-${m.style}">${STYLES[m.style]||m.style}</span>
+            <span>${m.date}</span>
+          </div>
         </div>
-      </div>
-      <canvas class="card-mini" id="mini-${m.id}" width="64" height="64"></canvas>
-    </div>`).join('');
+      </div>`;
+  }).join('');
 
-  setTimeout(() => sorted.forEach(m => drawMiniRadar(document.getElementById('mini-' + m.id), m.scores)), 30);
+  // ミニレーダー（写真なしのものだけ）
+  setTimeout(() => {
+    sorted.filter(m => !m.photo).forEach(m => {
+      const c = document.getElementById('mini-' + m.id);
+      if (c) drawMiniRadar(c, m.scores);
+    });
+  }, 30);
 }
 
 function drawMiniRadar(canvas, scores) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const cx = 32, cy = 32, r = 24, n = 5;
-
   ctx.clearRect(0, 0, 64, 64);
-
-  // Grid rings
   [0.25,0.5,0.75,1].forEach(s => {
-    ctx.beginPath();
-    ctx.strokeStyle = '#FDE68A';
-    ctx.lineWidth = 0.6;
+    ctx.beginPath(); ctx.strokeStyle = '#FDE68A'; ctx.lineWidth = 0.6;
     for (let i = 0; i < n; i++) {
       const a = (i/n)*Math.PI*2 - Math.PI/2;
       const x = cx + Math.cos(a)*r*s, y = cy + Math.sin(a)*r*s;
@@ -561,12 +564,8 @@ function drawMiniRadar(canvas, scores) {
     }
     ctx.closePath(); ctx.stroke();
   });
-
-  // Data polygon
   ctx.beginPath();
-  ctx.fillStyle = 'rgba(245,158,11,0.25)';
-  ctx.strokeStyle = '#F59E0B';
-  ctx.lineWidth = 1.5;
+  ctx.fillStyle = 'rgba(245,158,11,0.25)'; ctx.strokeStyle = '#F59E0B'; ctx.lineWidth = 1.5;
   SCORE_KEYS.forEach((k,i) => {
     const v = ((scores[k]||3)-1)/4;
     const a = (i/n)*Math.PI*2 - Math.PI/2;
@@ -586,6 +585,16 @@ function openDetail(id) {
   if (!m) return;
   currentId = id;
 
+  // 写真
+  const dPhoto = document.getElementById('d-photo');
+  if (m.photo) {
+    dPhoto.src = m.photo;
+    dPhoto.style.display = 'block';
+  } else {
+    dPhoto.style.display = 'none';
+    dPhoto.src = '';
+  }
+
   document.getElementById('d-name').textContent    = m.name;
   document.getElementById('d-brewery').textContent = m.brewery || '';
   document.getElementById('d-date').textContent    = m.date;
@@ -594,6 +603,18 @@ function openDetail(id) {
   badge.textContent = STYLES[m.style] || m.style;
   badge.className   = `badge badge-${m.style}`;
 
+  // URL
+  const urlEl    = document.getElementById('d-url');
+  const urlText  = document.getElementById('d-url-text');
+  if (m.url) {
+    urlEl.href         = m.url;
+    urlText.textContent = m.url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    urlEl.style.display = 'inline-flex';
+  } else {
+    urlEl.style.display = 'none';
+  }
+
+  // Notes
   const nw = document.getElementById('d-notes-wrap');
   if (m.notes) {
     nw.style.display = 'block';
@@ -603,10 +624,7 @@ function openDetail(id) {
   }
 
   showScreen('detail');
-  setTimeout(() => {
-    renderDetailRadar(m);
-    renderDetailQuad(m);
-  }, 80);
+  setTimeout(() => { renderDetailRadar(m); renderDetailQuad(m); }, 80);
 }
 
 function renderDetailRadar(m) {
@@ -628,12 +646,14 @@ function renderDetailQuad(m) {
    ADD / EDIT
 ──────────────────────────────── */
 function openAdd() {
-  editId = null; editPos = {x:0.5, y:0.5}; editStyle = 'traditional';
+  editId = null; editPos = {x:0.5, y:0.5}; editStyle = 'traditional'; editPhoto = null;
   document.getElementById('edit-title').textContent = 'ミードを記録';
   document.getElementById('f-name').value    = '';
   document.getElementById('f-brewery').value = '';
+  document.getElementById('f-url').value     = '';
   document.getElementById('f-date').value    = today();
   document.getElementById('f-notes').value   = '';
+  clearPhotoPreview();
   document.querySelectorAll('.style-pill').forEach(b => b.classList.remove('selected'));
   document.querySelector('.style-pill[data-style="traditional"]').classList.add('selected');
   buildSliders([3,3,3,3,3]);
@@ -644,12 +664,14 @@ function openAdd() {
 function openEdit(id) {
   const m = meads.find(x => x.id === id);
   if (!m) return;
-  editId = id; editPos = {...m.position}; editStyle = m.style;
+  editId = id; editPos = {...m.position}; editStyle = m.style; editPhoto = m.photo || null;
   document.getElementById('edit-title').textContent = '編集';
   document.getElementById('f-name').value    = m.name;
   document.getElementById('f-brewery').value = m.brewery || '';
+  document.getElementById('f-url').value     = m.url || '';
   document.getElementById('f-date').value    = m.date;
   document.getElementById('f-notes').value   = m.notes || '';
+  if (m.photo) showPhotoPreview(m.photo); else clearPhotoPreview();
   document.querySelectorAll('.style-pill').forEach(b => b.classList.remove('selected'));
   document.querySelector(`.style-pill[data-style="${m.style}"]`).classList.add('selected');
   const vals = SCORE_KEYS.map(k => m.scores[k]||3);
@@ -667,8 +689,7 @@ function pickStyle(btn) {
 }
 
 function buildSliders(vals) {
-  const wrap = document.getElementById('sliders');
-  wrap.innerHTML = SCORE_KEYS.map((k,i) => `
+  document.getElementById('sliders').innerHTML = SCORE_KEYS.map((k,i) => `
     <div class="slider-row">
       <span class="slider-label">${SCORE_LABELS[i]}</span>
       <input type="range" id="s-${k}" min="1" max="5" value="${vals[i]}"
@@ -696,11 +717,13 @@ function saveMead() {
     id:       editId || uid(),
     name,
     brewery:  document.getElementById('f-brewery').value.trim(),
+    url:      document.getElementById('f-url').value.trim(),
     date:     document.getElementById('f-date').value || today(),
     style:    editStyle,
     position: {...editPos},
     scores,
     notes:    document.getElementById('f-notes').value.trim(),
+    photo:    editPhoto,
   };
 
   if (editId) {
@@ -735,18 +758,25 @@ function initEditCanvas() {
   editCtx = editCanvas.getContext('2d');
   drawEditQuad();
 
-  editCanvas.addEventListener('click', handleEditTap);
+  // Remove old listeners by cloning
+  const newCanvas = editCanvas.cloneNode(true);
+  editCanvas.parentNode.replaceChild(newCanvas, editCanvas);
+  editCanvas = newCanvas;
+  editCtx = editCanvas.getContext('2d');
+  drawEditQuad();
+
+  editCanvas.addEventListener('click', e => {
+    const rc = editCanvas.getBoundingClientRect();
+    setEditPos((e.clientX - rc.left) / rc.width, (e.clientY - rc.top) / rc.height);
+  });
   editCanvas.addEventListener('touchend', e => {
     e.preventDefault();
-    const t  = e.changedTouches[0];
-    const rc = editCanvas.getBoundingClientRect();
+    const t = e.changedTouches[0], rc = editCanvas.getBoundingClientRect();
     setEditPos((t.clientX - rc.left) / rc.width, (t.clientY - rc.top) / rc.height);
   }, { passive: false });
-
-  // Drag support
   let dragging = false;
   editCanvas.addEventListener('mousedown', () => dragging = true);
-  editCanvas.addEventListener('mouseup',   () => dragging = false);
+  window.addEventListener('mouseup',      () => dragging = false);
   editCanvas.addEventListener('mousemove', e => {
     if (!dragging) return;
     const rc = editCanvas.getBoundingClientRect();
@@ -754,8 +784,7 @@ function initEditCanvas() {
   });
   editCanvas.addEventListener('touchmove', e => {
     e.preventDefault();
-    const t  = e.touches[0];
-    const rc = editCanvas.getBoundingClientRect();
+    const t = e.touches[0], rc = editCanvas.getBoundingClientRect();
     setEditPos((t.clientX - rc.left) / rc.width, (t.clientY - rc.top) / rc.height);
   }, { passive: false });
 }
@@ -774,7 +803,7 @@ function drawEditQuad() {
 }
 
 /* ────────────────────────────────
-   RADAR CHART (edit)
+   RADAR CHART
 ──────────────────────────────── */
 function initEditRadar(vals) {
   if (editChart) { editChart.destroy(); editChart = null; }
@@ -789,11 +818,8 @@ function makeRadarChart(canvasId, data) {
       datasets: [{
         data,
         backgroundColor: 'rgba(245,158,11,0.18)',
-        borderColor: '#F59E0B',
-        borderWidth: 2,
-        pointBackgroundColor: '#F59E0B',
-        pointRadius: 5,
-        pointHoverRadius: 7,
+        borderColor: '#F59E0B', borderWidth: 2,
+        pointBackgroundColor: '#F59E0B', pointRadius: 5, pointHoverRadius: 7,
       }]
     },
     options: {
@@ -802,12 +828,8 @@ function makeRadarChart(canvasId, data) {
         r: {
           min: 0, max: 5,
           ticks: { stepSize: 1, display: false },
-          grid:       { color: '#FDE68A' },
-          angleLines: { color: '#FDE68A' },
-          pointLabels: {
-            font: { size: 13, weight: '600' },
-            color: '#78350F',
-          },
+          grid: { color: '#FDE68A' }, angleLines: { color: '#FDE68A' },
+          pointLabels: { font: { size: 13, weight: '600' }, color: '#78350F' },
         }
       },
       plugins: { legend: { display: false } },
@@ -823,33 +845,25 @@ function renderMapView() {
   const canvas = document.getElementById('map-canvas');
   resizeCanvas(canvas);
   const ctx = canvas.getContext('2d');
-  const rc  = canvas.getBoundingClientRect();
-  const w   = rc.width, h = rc.height;
+  const rc = canvas.getBoundingClientRect();
+  const w = rc.width, h = rc.height;
 
   drawQuadBase(ctx, w, h);
 
   meads.forEach(m => {
     const color = DOT_COLORS[m.style] || '#F59E0B';
-    const px = m.position.x * w;
-    const py = m.position.y * h;
+    const px = m.position.x * w, py = m.position.y * h;
     drawDot(ctx, px, py, color, 9);
-
-    // Label
     ctx.save();
     ctx.font = `${Math.round(w*0.033)}px -apple-system, sans-serif`;
-    ctx.fillStyle = '#1C1917';
-    ctx.textAlign  = 'center';
-    ctx.textBaseline = 'top';
-    const label = m.name.length > 7 ? m.name.slice(0,7) + '…' : m.name;
-    ctx.fillText(label, px, py + 12);
+    ctx.fillStyle = '#1C1917'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(m.name.length > 7 ? m.name.slice(0,7)+'…' : m.name, px, py + 12);
     ctx.restore();
   });
 
-  // Tap to detail
   canvas.onclick = e => {
     const rc2 = canvas.getBoundingClientRect();
-    const mx = e.clientX - rc2.left;
-    const my = e.clientY - rc2.top;
+    const mx = e.clientX - rc2.left, my = e.clientY - rc2.top;
     let best = null, bestD = 35;
     meads.forEach(m => {
       const d = Math.hypot(m.position.x * w - mx, m.position.y * h - my);
@@ -858,7 +872,6 @@ function renderMapView() {
     if (best) openDetail(best.id);
   };
 
-  // Legend
   const leg = document.getElementById('map-legend');
   const used = [...new Set(meads.map(m => m.style))];
   leg.innerHTML = used.map(s => `
@@ -869,128 +882,74 @@ function renderMapView() {
 }
 
 /* ────────────────────────────────
-   QUAD MAP DRAWING HELPERS
+   CANVAS HELPERS
 ──────────────────────────────── */
 function resizeCanvas(canvas) {
-  const rc  = canvas.getBoundingClientRect();
+  const rc = canvas.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
   canvas.width  = rc.width  * dpr;
   canvas.height = rc.height * dpr;
-  const ctx = canvas.getContext('2d');
-  ctx.scale(dpr, dpr);
+  canvas.getContext('2d').scale(dpr, dpr);
 }
 
 function drawQuadBase(ctx, w, h) {
-  // BG
   ctx.fillStyle = '#FFFDF7';
   ctx.fillRect(0, 0, w, h);
 
-  // Quadrant tints
-  const tints = [
-    ['#FFFDE7', 0,   0],    // top-left:  dry   + floral
-    ['#FFF8E1', w/2, 0],    // top-right: sweet + floral
-    ['#FFF3E0', 0,   h/2],  // btm-left:  dry   + subtle
-    ['#FEF9C3', w/2, h/2],  // btm-right: sweet + subtle
-  ];
-  tints.forEach(([c,x,y]) => {
-    ctx.fillStyle = c;
-    ctx.fillRect(x, y, w/2, h/2);
+  [['#FFFDE7',0,0],['#FFF8E1',w/2,0],['#FFF3E0',0,h/2],['#FEF9C3',w/2,h/2]].forEach(([c,x,y]) => {
+    ctx.fillStyle = c; ctx.fillRect(x, y, w/2, h/2);
   });
 
-  // Dashed grid
   ctx.save();
-  ctx.strokeStyle = '#FDE68A';
-  ctx.lineWidth   = 1;
-  ctx.setLineDash([5,5]);
+  ctx.strokeStyle = '#FDE68A'; ctx.lineWidth = 1; ctx.setLineDash([5,5]);
   ctx.beginPath();
-  ctx.moveTo(w/2, 0); ctx.lineTo(w/2, h);
-  ctx.moveTo(0, h/2); ctx.lineTo(w, h/2);
-  ctx.stroke();
-  ctx.restore();
+  ctx.moveTo(w/2,0); ctx.lineTo(w/2,h); ctx.moveTo(0,h/2); ctx.lineTo(w,h/2);
+  ctx.stroke(); ctx.restore();
 
-  // Solid axes
-  ctx.strokeStyle = '#D97706';
-  ctx.lineWidth   = 1.5;
-  ctx.setLineDash([]);
+  ctx.strokeStyle = '#D97706'; ctx.lineWidth = 1.5; ctx.setLineDash([]);
   ctx.beginPath();
-  ctx.moveTo(w/2, 4); ctx.lineTo(w/2, h-4);
-  ctx.moveTo(4, h/2); ctx.lineTo(w-4, h/2);
+  ctx.moveTo(w/2,4); ctx.lineTo(w/2,h-4); ctx.moveTo(4,h/2); ctx.lineTo(w-4,h/2);
   ctx.stroke();
 
-  // Arrow tips
   const arr = (x, y, dir) => {
-    const s = 5;
-    ctx.beginPath();
-    ctx.fillStyle = '#D97706';
-    if (dir === 'up')    { ctx.moveTo(x,y-s); ctx.lineTo(x-s,y+s); ctx.lineTo(x+s,y+s); }
-    if (dir === 'down')  { ctx.moveTo(x,y+s); ctx.lineTo(x-s,y-s); ctx.lineTo(x+s,y-s); }
-    if (dir === 'left')  { ctx.moveTo(x-s,y); ctx.lineTo(x+s,y-s); ctx.lineTo(x+s,y+s); }
-    if (dir === 'right') { ctx.moveTo(x+s,y); ctx.lineTo(x-s,y-s); ctx.lineTo(x-s,y+s); }
+    const s = 5; ctx.beginPath(); ctx.fillStyle = '#D97706';
+    if (dir==='up')    { ctx.moveTo(x,y-s); ctx.lineTo(x-s,y+s); ctx.lineTo(x+s,y+s); }
+    if (dir==='down')  { ctx.moveTo(x,y+s); ctx.lineTo(x-s,y-s); ctx.lineTo(x+s,y-s); }
+    if (dir==='left')  { ctx.moveTo(x-s,y); ctx.lineTo(x+s,y-s); ctx.lineTo(x+s,y+s); }
+    if (dir==='right') { ctx.moveTo(x+s,y); ctx.lineTo(x-s,y-s); ctx.lineTo(x-s,y+s); }
     ctx.closePath(); ctx.fill();
   };
-  arr(w/2, 5,   'up');
-  arr(w/2, h-5, 'down');
-  arr(5,   h/2, 'left');
-  arr(w-5, h/2, 'right');
+  arr(w/2,5,'up'); arr(w/2,h-5,'down'); arr(5,h/2,'left'); arr(w-5,h/2,'right');
 
-  // Axis labels
-  const fs = Math.max(11, Math.round(w * 0.038));
-  ctx.font = `700 ${fs}px -apple-system, sans-serif`;
-  ctx.fillStyle = '#92400E';
+  const fs = Math.max(11, Math.round(w*0.038));
+  ctx.font = `700 ${fs}px -apple-system, sans-serif`; ctx.fillStyle = '#92400E';
+  ctx.textAlign='center'; ctx.textBaseline='top';    ctx.fillText('蜂蜜感 強い', w/2, 8);
+  ctx.textBaseline='bottom';                         ctx.fillText('蜂蜜感 弱い', w/2, h-8);
+  ctx.textAlign='left';   ctx.textBaseline='middle'; ctx.fillText('辛口', 10, h/2);
+  ctx.textAlign='right';                             ctx.fillText('甘口', w-10, h/2);
 
-  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-  ctx.fillText('蜂蜜感 強い', w/2, 8);
-
-  ctx.textBaseline = 'bottom';
-  ctx.fillText('蜂蜜感 弱い', w/2, h - 8);
-
-  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-  ctx.fillText('辛口', 10, h/2);
-
-  ctx.textAlign = 'right';
-  ctx.fillText('甘口', w - 10, h/2);
-
-  // Sub-labels
-  const sf = Math.max(9, Math.round(w * 0.028));
-  ctx.font = `${sf}px -apple-system, sans-serif`;
-  ctx.fillStyle = '#C4A04A';
-
-  ctx.textAlign = 'left';   ctx.textBaseline = 'top';
-  ctx.fillText('ドライ×フローラル', 8, 8 + fs + 2);
-
-  ctx.textAlign = 'right';  ctx.textBaseline = 'top';
-  ctx.fillText('スウィート×フローラル', w - 8, 8 + fs + 2);
-
-  ctx.textAlign = 'left';   ctx.textBaseline = 'bottom';
-  ctx.fillText('ドライ×サブトル', 8, h - 8 - fs - 2);
-
-  ctx.textAlign = 'right';  ctx.textBaseline = 'bottom';
-  ctx.fillText('スウィート×サブトル', w - 8, h - 8 - fs - 2);
+  const sf = Math.max(9, Math.round(w*0.028));
+  ctx.font = `${sf}px -apple-system, sans-serif`; ctx.fillStyle = '#C4A04A';
+  ctx.textAlign='left';  ctx.textBaseline='top';    ctx.fillText('ドライ×フローラル',    8,   8+fs+2);
+  ctx.textAlign='right'; ctx.textBaseline='top';    ctx.fillText('スウィート×フローラル', w-8, 8+fs+2);
+  ctx.textAlign='left';  ctx.textBaseline='bottom'; ctx.fillText('ドライ×サブトル',      8,   h-8-fs-2);
+  ctx.textAlign='right'; ctx.textBaseline='bottom'; ctx.fillText('スウィート×サブトル',  w-8, h-8-fs-2);
 }
 
 function drawDot(ctx, px, py, color, r) {
   ctx.save();
-  ctx.shadowColor = color;
-  ctx.shadowBlur  = 10;
+  ctx.shadowColor = color; ctx.shadowBlur = 10;
   ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.arc(px, py, r, 0, Math.PI*2);
-  ctx.fill();
-  ctx.shadowBlur = 0;
-  ctx.fillStyle = 'white';
-  ctx.beginPath();
-  ctx.arc(px, py, r * 0.35, 0, Math.PI*2);
-  ctx.fill();
+  ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2); ctx.fill();
+  ctx.shadowBlur = 0; ctx.fillStyle = 'white';
+  ctx.beginPath(); ctx.arc(px, py, r*0.35, 0, Math.PI*2); ctx.fill();
   ctx.restore();
 }
 
 /* ────────────────────────────────
    UTILS
 ──────────────────────────────── */
-function today() {
-  const d = new Date();
-  return d.toISOString().slice(0, 10);
-}
+function today() { return new Date().toISOString().slice(0,10); }
 
 /* ────────────────────────────────
    INIT
