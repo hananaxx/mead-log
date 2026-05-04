@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>AI アプリバトル 投票</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic UI', sans-serif;
+      background: #FFFBEB;
+      color: #1C1917;
+      min-height: 100dvh;
+    }
+
+    .app {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 0 16px 48px;
+    }
+
+    /* Header */
+    .header {
+      padding: 24px 0 4px;
+      text-align: center;
+    }
+    .header h1 { font-size: 20px; font-weight: 700; }
+    .header .subtitle { font-size: 13px; color: #78716C; margin-top: 6px; }
+
+    /* Screens */
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* ---- Select screen ---- */
+    .select-lead {
+      font-size: 15px;
+      font-weight: 600;
+      text-align: center;
+      margin: 24px 0 14px;
+    }
+    .team-pills { display: flex; flex-direction: column; gap: 10px; }
+    .team-pill {
+      padding: 16px;
+      border: 2px solid #FDE68A;
+      border-radius: 14px;
+      background: white;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      text-align: center;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      user-select: none;
+    }
+    .team-pill:active { opacity: 0.75; }
+    .team-pill.selected {
+      background: #F59E0B;
+      border-color: #F59E0B;
+      color: white;
+    }
+    .confirm-wrap { margin-top: 20px; }
+
+    /* ---- Buttons ---- */
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      font-family: inherit;
+    }
+    .btn:active:not(:disabled) { opacity: 0.75; }
+    .btn:disabled { opacity: 0.45; cursor: default; }
+    .btn-primary { background: #F59E0B; color: white; }
+    .btn-voted {
+      background: #D1FAE5;
+      color: #065F46;
+      border: 1.5px solid #6EE7B7;
+    }
+    .btn-mine {
+      background: #FEF3C7;
+      color: #92400E;
+      border: 1.5px solid #FDE68A;
+    }
+    .btn-danger {
+      background: white;
+      color: #DC2626;
+      border: 1.5px solid #DC2626;
+    }
+
+    /* ---- Vote screen ---- */
+    .vote-cards { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+
+    .vote-card {
+      background: white;
+      border: 1px solid #FDE68A;
+      border-radius: 14px;
+      padding: 14px 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    }
+    .vote-card.is-mine {
+      background: #FFFBEB;
+      border: 1.5px solid #F59E0B;
+    }
+
+    .card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .my-team-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #92400E;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+
+    .team-name { font-size: 18px; font-weight: 700; }
+
+    .vote-count {
+      display: flex;
+      align-items: baseline;
+      gap: 2px;
+    }
+    .count-num {
+      font-size: 26px;
+      font-weight: 700;
+      color: #F59E0B;
+      display: inline-block;
+      min-width: 32px;
+      text-align: right;
+    }
+    .count-unit { font-size: 13px; color: #A8A29E; }
+
+    /* Change team */
+    .change-team {
+      text-align: center;
+      margin-top: 20px;
+    }
+    .change-team button {
+      background: none;
+      border: none;
+      font-size: 13px;
+      color: #78716C;
+      text-decoration: underline;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    /* Admin */
+    .admin-section {
+      margin-top: 32px;
+      padding: 16px;
+      border: 1.5px dashed #FDE68A;
+      border-radius: 14px;
+    }
+    .admin-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #A8A29E;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 12px;
+    }
+
+    /* Loading */
+    .loading {
+      text-align: center;
+      padding: 48px 0;
+      color: #A8A29E;
+      font-size: 15px;
+    }
+
+    /* Bump animation on vote count */
+    @keyframes bump {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.4); color: #D97706; }
+      100% { transform: scale(1); }
+    }
+    .bumping { animation: bump 0.28s ease; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- チーム選択画面 -->
+  <div id="screen-select" class="screen">
+    <div class="header">
+      <h1>🗳 AI アプリバトル</h1>
+    </div>
+    <p class="select-lead">あなたのチームを選んでください</p>
+    <div class="team-pills" id="team-pills"></div>
+    <div class="confirm-wrap">
+      <button class="btn btn-primary" id="btn-confirm" disabled>決定する</button>
+    </div>
+  </div>
+
+  <!-- 投票画面 -->
+  <div id="screen-vote" class="screen">
+    <div class="header">
+      <h1>🗳 AI アプリバトル</h1>
+      <p class="subtitle" id="vote-subtitle"></p>
+    </div>
+    <div id="vote-cards-container">
+      <div class="loading">読み込み中…</div>
+    </div>
+    <div class="change-team">
+      <button id="btn-change-team">チームを変更する</button>
+    </div>
+    <div class="admin-section" id="admin-section" style="display:none">
+      <p class="admin-label">管理者メニュー</p>
+      <button class="btn btn-danger" id="btn-reset">投票データをリセット</button>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+/*
+ * =====================================================
+ * ★ 設定: イベント当日にここを書き換えてください
+ * =====================================================
+ */
+const TEAMS = [
+  'チームA',
+  'チームB',
+  'チームC',
+  'チームD',
+];
+
+/*
+ * =====================================================
+ * ★ Firebase 設定
+ *   1. https://console.firebase.google.com/ でプロジェクト作成
+ *   2. Realtime Database を有効化（テストモード）
+ *   3. プロジェクト設定 → ウェブアプリを追加 → SDK 設定をコピー
+ *   4. 下の YOUR_... を置き換える
+ * =====================================================
+ */
+const firebaseConfig = {
+  apiKey:            'YOUR_API_KEY',
+  authDomain:        'YOUR_PROJECT.firebaseapp.com',
+  databaseURL:       'https://YOUR_PROJECT-default-rtdb.firebaseio.com',
+  projectId:         'YOUR_PROJECT',
+  storageBucket:     'YOUR_PROJECT.appspot.com',
+  messagingSenderId: 'YOUR_SENDER_ID',
+  appId:             'YOUR_APP_ID',
+};
+
+// -------------------------------------------------------
+
+import { initializeApp }
+  from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js';
+import { getDatabase, ref, onValue, update, increment, set }
+  from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js';
+
+const fbApp  = initializeApp(firebaseConfig);
+const db     = getDatabase(fbApp);
+const votesRef = ref(db, 'votes');
+
+// -------------------------------------------------------
+// State
+// -------------------------------------------------------
+let myTeam    = localStorage.getItem('vote_myTeam');
+let voted     = new Set(JSON.parse(localStorage.getItem('vote_voted') || '[]'));
+const counts  = new Map();          // team -> DOM span element
+const buttons = new Map();          // team -> DOM button element
+const isAdmin = location.search.includes('admin');
+
+// -------------------------------------------------------
+// Screens
+// -------------------------------------------------------
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+}
+
+// -------------------------------------------------------
+// Select screen
+// -------------------------------------------------------
+function buildSelectScreen() {
+  const container = document.getElementById('team-pills');
+  const confirmBtn = document.getElementById('btn-confirm');
+  container.innerHTML = '';
+  let selectedTeam = null;
+
+  TEAMS.forEach(team => {
+    const pill = document.createElement('div');
+    pill.className = 'team-pill';
+    pill.textContent = team;
+    pill.addEventListener('click', () => {
+      selectedTeam = team;
+      container.querySelectorAll('.team-pill').forEach(p => p.classList.remove('selected'));
+      pill.classList.add('selected');
+      confirmBtn.disabled = false;
+    });
+    container.appendChild(pill);
+  });
+
+  confirmBtn.onclick = () => {
+    if (!selectedTeam) return;
+    myTeam = selectedTeam;
+    voted  = new Set();
+    localStorage.setItem('vote_myTeam', myTeam);
+    localStorage.setItem('vote_voted', '[]');
+    buildVoteScreen();
+    showScreen('vote');
+  };
+}
+
+// -------------------------------------------------------
+// Vote screen
+// -------------------------------------------------------
+function buildVoteScreen() {
+  document.getElementById('vote-subtitle').textContent = `${myTeam} として参加中`;
+
+  const container = document.getElementById('vote-cards-container');
+  const voteCards = document.createElement('div');
+  voteCards.className = 'vote-cards';
+  counts.clear();
+  buttons.clear();
+
+  TEAMS.forEach(team => {
+    const isMine   = team === myTeam;
+    const isVoted  = voted.has(team);
+
+    const card = document.createElement('div');
+    card.className = 'vote-card' + (isMine ? ' is-mine' : '');
+
+    if (isMine) {
+      const lbl = document.createElement('div');
+      lbl.className = 'my-team-label';
+      lbl.textContent = 'あなたのチーム';
+      card.appendChild(lbl);
+    }
+
+    // Top row: name + count
+    const top = document.createElement('div');
+    top.className = 'card-top';
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'team-name';
+    nameEl.textContent = team;
+
+    const countWrap = document.createElement('div');
+    countWrap.className = 'vote-count';
+    const numSpan = document.createElement('span');
+    numSpan.className = 'count-num';
+    numSpan.textContent = '–';
+    const unitSpan = document.createElement('span');
+    unitSpan.className = 'count-unit';
+    unitSpan.textContent = '票';
+    countWrap.appendChild(numSpan);
+    countWrap.appendChild(unitSpan);
+    counts.set(team, numSpan);
+
+    top.appendChild(nameEl);
+    top.appendChild(countWrap);
+    card.appendChild(top);
+
+    // Button
+    const btn = document.createElement('button');
+    btn.className = 'btn';
+    if (isMine) {
+      btn.classList.add('btn-mine');
+      btn.textContent = '✅ 自分のチーム';
+      btn.disabled = true;
+    } else if (isVoted) {
+      btn.classList.add('btn-voted');
+      btn.textContent = '👍 いいね済み';
+      btn.disabled = true;
+    } else {
+      btn.classList.add('btn-primary');
+      btn.textContent = '👍 いいね！';
+      btn.addEventListener('click', () => castVote(team, btn));
+    }
+    buttons.set(team, btn);
+    card.appendChild(btn);
+    voteCards.appendChild(card);
+  });
+
+  container.replaceChildren(voteCards);
+
+  if (isAdmin) {
+    document.getElementById('admin-section').style.display = 'block';
+  }
+}
+
+// -------------------------------------------------------
+// Actions
+// -------------------------------------------------------
+async function castVote(team, btn) {
+  if (team === myTeam || voted.has(team)) return;
+
+  voted.add(team);
+  localStorage.setItem('vote_voted', JSON.stringify([...voted]));
+
+  // Optimistic UI update
+  btn.className = 'btn btn-voted';
+  btn.textContent = '👍 いいね済み';
+  btn.disabled = true;
+
+  await update(votesRef, { [team]: increment(1) });
+}
+
+document.getElementById('btn-change-team').addEventListener('click', () => {
+  if (!confirm('チームを変更すると投票状況がリセットされます。続けますか？')) return;
+  localStorage.removeItem('vote_myTeam');
+  localStorage.removeItem('vote_voted');
+  myTeam = null;
+  voted  = new Set();
+  buildSelectScreen();
+  showScreen('select');
+});
+
+document.getElementById('btn-reset').addEventListener('click', async () => {
+  if (!confirm('全チームの投票をリセットします。よろしいですか？')) return;
+  const reset = {};
+  TEAMS.forEach(t => { reset[t] = 0; });
+  await set(votesRef, reset);
+});
+
+// -------------------------------------------------------
+// Real-time listener
+// -------------------------------------------------------
+onValue(votesRef, snapshot => {
+  const data = snapshot.val() || {};
+  TEAMS.forEach(team => {
+    const newCount = data[team] ?? 0;
+    const el = counts.get(team);
+    if (!el) return;
+    const prev = el.dataset.prev;
+    el.textContent = newCount;
+    if (prev !== undefined && String(newCount) !== prev) {
+      el.classList.remove('bumping');
+      void el.offsetWidth;
+      el.classList.add('bumping');
+      el.addEventListener('animationend', () => el.classList.remove('bumping'), { once: true });
+    }
+    el.dataset.prev = newCount;
+  });
+});
+
+// -------------------------------------------------------
+// Init
+// -------------------------------------------------------
+buildSelectScreen();
+if (myTeam && TEAMS.includes(myTeam)) {
+  buildVoteScreen();
+  showScreen('vote');
+} else {
+  showScreen('select');
+}
+</script>
+</body>
+</html>
