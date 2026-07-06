@@ -1018,8 +1018,14 @@ function today() { return new Date().toISOString().slice(0,10); }
 /* ────────────────────────────────
    PIN LOCK
 ──────────────────────────────── */
-const _p = [49,49,55,50].map(c=>String.fromCharCode(c)).join('');
+// PINそのものは保存せず、SHA-256ハッシュ（一方向の変換値）だけを保持する
+const PIN_HASH = '48e1ff78f2967629663434954e7034e9a16116b94c678174f080fb20509144dc';
 let pinEntry = '';
+
+async function sha256Hex(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 function pinInput(d) {
   if (pinEntry.length >= 4) return;
@@ -1040,8 +1046,8 @@ function updateDots() {
   }
 }
 
-function checkPin() {
-  if (pinEntry === _p) {
+async function checkPin() {
+  if (await sha256Hex(pinEntry) === PIN_HASH) {
     sessionStorage.setItem('ml_ok', '1');
     document.getElementById('lock-screen').style.display = 'none';
   } else {
