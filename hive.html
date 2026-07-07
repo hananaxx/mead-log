@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>養蜂ノート</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { overflow-x: hidden; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic UI', sans-serif;
+      background: #FFFBEB;
+      color: #1C1917;
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .screen { display: none; flex-direction: column; min-height: 100vh; }
+    .screen.active { display: flex; }
+
+    .header {
+      background: #F59E0B;
+      color: white;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 2px 8px rgba(245,158,11,0.3);
+    }
+    .header h1 { font-size: 19px; font-weight: 700; flex: 1; }
+    .back-btn {
+      background: none; border: none; color: white;
+      font-size: 22px; cursor: pointer; padding: 2px 6px 2px 0; line-height: 1;
+    }
+    .header-action {
+      background: rgba(255,255,255,0.25);
+      border: 1px solid rgba(255,255,255,0.5);
+      color: white; padding: 6px 14px; border-radius: 20px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+
+    .content { flex: 1; padding: 16px; padding-bottom: 100px; overflow-y: auto; }
+
+    /* ── Bottom tab bar ── */
+    .tabbar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      max-width: 480px; margin: 0 auto;
+      background: white; border-top: 1px solid #FDE68A;
+      display: flex; z-index: 30;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .tabbar button {
+      flex: 1; background: none; border: none; cursor: pointer;
+      padding: 8px 0 10px; font-size: 11px; font-weight: 600; color: #A8A29E;
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      font-family: inherit;
+    }
+    .tabbar button .t-icon { font-size: 22px; }
+    .tabbar button.active { color: #D97706; }
+    .tabbar .tab-center {
+      color: white;
+    }
+    .tabbar .tab-center .t-circle {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: #F59E0B; box-shadow: 0 3px 10px rgba(245,158,11,0.5);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; margin-top: -18px;
+    }
+    .tabbar .tab-center span.t-label { color: #D97706; }
+
+    /* ── Hive cards ── */
+    .hive-card {
+      background: white; border-radius: 14px; padding: 14px;
+      margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+      border: 1px solid #FDE68A; cursor: pointer; transition: opacity 0.15s;
+    }
+    .hive-card:active { opacity: 0.7; }
+    .hive-card-top { display: flex; align-items: center; gap: 10px; }
+    .hive-icon {
+      width: 46px; height: 46px; border-radius: 12px; flex-shrink: 0;
+      background: #FEF3C7; display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+    }
+    .hive-info { flex: 1; min-width: 0; }
+    .hive-name { font-size: 16px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .hive-meta { font-size: 12px; color: #A8A29E; margin-top: 3px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .dot-good { background: #10B981; }
+    .dot-warn { background: #F59E0B; }
+    .dot-bad  { background: #EF4444; }
+    .dot-none { background: #D6D3D1; }
+    .hive-alerts { margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+    .badge-seiyo { background: #FEF3C7; color: #92400E; }
+    .badge-nihon { background: #D1FAE5; color: #065F46; }
+    .badge-sonota { background: #F3F4F6; color: #374151; }
+
+    /* ── Answer chips (tone-colored) ── */
+    .achip { display: inline-block; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 12px; }
+    .tone-good    { background: #D1FAE5; color: #065F46; }
+    .tone-warn    { background: #FFEDD5; color: #C2410C; }
+    .tone-bad     { background: #FEE2E2; color: #991B1B; }
+    .tone-neutral { background: #F3F4F6; color: #44403C; }
+
+    .empty { text-align: center; padding: 64px 24px; color: #A8A29E; }
+    .empty .icon { font-size: 72px; margin-bottom: 16px; }
+    .empty p { font-size: 15px; line-height: 1.7; }
+
+    .section-title {
+      font-size: 11px; font-weight: 700; color: #A8A29E;
+      text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; margin-top: 4px;
+    }
+
+    /* ── Form ── */
+    .form-group { margin-bottom: 18px; }
+    .form-group label {
+      display: block; font-size: 12px; font-weight: 700; color: #78716C;
+      letter-spacing: 0.5px; margin-bottom: 6px;
+    }
+    .form-input {
+      width: 100%; padding: 12px 14px; border: 1.5px solid #FDE68A;
+      border-radius: 12px; font-size: 16px; background: white;
+      outline: none; transition: border-color 0.2s; font-family: inherit;
+    }
+    .form-input:focus { border-color: #F59E0B; }
+    textarea.form-input { min-height: 80px; resize: vertical; line-height: 1.5; }
+
+    .seg { display: flex; gap: 8px; flex-wrap: wrap; }
+    .seg button {
+      flex: 1; min-width: 90px; padding: 10px 8px; border-radius: 12px;
+      border: 1.5px solid #FDE68A; background: white; font-size: 14px;
+      font-weight: 600; color: #78716C; cursor: pointer; font-family: inherit;
+    }
+    .seg button.sel { background: #F59E0B; border-color: #F59E0B; color: white; }
+
+    .btn-primary {
+      width: 100%; padding: 15px; background: #F59E0B; color: white;
+      border: none; border-radius: 14px; font-size: 16px; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+      box-shadow: 0 3px 10px rgba(245,158,11,0.4);
+    }
+    .btn-primary:active { opacity: 0.8; }
+    .btn-primary:disabled { background: #E7E5E4; box-shadow: none; color: #A8A29E; }
+    .btn-ghost {
+      width: 100%; padding: 13px; background: none; color: #78716C;
+      border: 1.5px solid #E7E5E4; border-radius: 14px; font-size: 14px;
+      font-weight: 600; cursor: pointer; font-family: inherit; margin-top: 10px;
+    }
+    .btn-danger-text {
+      width: 100%; padding: 12px; background: none; border: none;
+      color: #EF4444; font-size: 14px; font-weight: 600; cursor: pointer;
+      font-family: inherit; margin-top: 6px;
+    }
+
+    /* ── Guided inspection ── */
+    .progress-track {
+      height: 6px; background: #FDE68A; border-radius: 3px; overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .progress-fill { height: 100%; background: #F59E0B; border-radius: 3px; transition: width 0.3s; }
+    .q-card {
+      background: white; border-radius: 18px; padding: 24px 18px;
+      border: 1px solid #FDE68A; box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+      animation: slideIn 0.25s ease;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(24px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    .q-emoji { font-size: 44px; text-align: center; margin-bottom: 8px; }
+    .q-label { font-size: 19px; font-weight: 700; text-align: center; margin-bottom: 4px; }
+    .q-hint  { font-size: 12px; color: #A8A29E; text-align: center; margin-bottom: 18px; }
+    .q-options { display: flex; flex-direction: column; gap: 10px; }
+    .q-options button {
+      padding: 14px; border-radius: 14px; border: 1.5px solid #E7E5E4;
+      background: #FAFAF9; font-size: 16px; font-weight: 600; color: #44403C;
+      cursor: pointer; font-family: inherit; transition: all 0.15s;
+    }
+    .q-options button.sel { border-color: #F59E0B; background: #FEF3C7; color: #92400E; }
+    .q-nav { display: flex; gap: 10px; margin-top: 18px; }
+    .q-nav button {
+      flex: 1; padding: 12px; border-radius: 12px; font-size: 14px; font-weight: 600;
+      cursor: pointer; font-family: inherit;
+    }
+    .q-back { background: none; border: 1.5px solid #E7E5E4; color: #78716C; }
+    .q-skip { background: none; border: 1.5px solid #E7E5E4; color: #78716C; }
+    .q-next { background: #F59E0B; border: none; color: white; }
+    .inspect-hive-label {
+      text-align: center; font-size: 13px; font-weight: 700; color: #D97706;
+      margin-bottom: 10px;
+    }
+
+    /* ── Photo ── */
+    .photo-zone {
+      position: relative; border: 2px dashed #FDE68A; border-radius: 14px;
+      background: #FFFDF5; text-align: center; padding: 20px; cursor: pointer;
+    }
+    .photo-zone input[type=file] {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      opacity: 0; cursor: pointer;
+    }
+    .pz-icon { font-size: 34px; }
+    .pz-text { font-size: 14px; color: #92400E; font-weight: 600; margin-top: 4px; }
+    .photo-preview-img {
+      display: none; width: 100%; border-radius: 12px; margin-top: 10px;
+    }
+    .photo-remove-btn {
+      display: none; width: 100%; margin-top: 8px; padding: 10px;
+      background: none; border: none; color: #EF4444; font-size: 13px;
+      font-weight: 600; cursor: pointer; font-family: inherit;
+    }
+
+    /* ── Timeline ── */
+    .tl-entry {
+      background: white; border-radius: 14px; padding: 14px;
+      margin-bottom: 12px; border: 1px solid #FDE68A;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06); cursor: pointer;
+    }
+    .tl-date { font-size: 13px; font-weight: 700; color: #D97706; margin-bottom: 8px; }
+    .tl-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tl-detail { display: none; margin-top: 12px; border-top: 1px dashed #FDE68A; padding-top: 12px; }
+    .tl-entry.open .tl-detail { display: block; }
+    .tl-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 0; font-size: 14px; }
+    .tl-row .tl-q { color: #78716C; flex-shrink: 0; }
+    .tl-row .tl-a { text-align: right; }
+    .tl-photo { width: 100%; border-radius: 12px; margin-top: 10px; }
+    .tl-memo { font-size: 14px; line-height: 1.6; color: #44403C; background: #FAFAF9; border-radius: 10px; padding: 10px; margin-top: 10px; white-space: pre-wrap; }
+
+    /* ── Settings ── */
+    .item-row {
+      background: white; border-radius: 14px; padding: 12px;
+      margin-bottom: 10px; border: 1px solid #FDE68A;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .item-row.off { opacity: 0.45; }
+    .item-emoji { font-size: 22px; flex-shrink: 0; }
+    .item-main { flex: 1; min-width: 0; cursor: pointer; }
+    .item-label { font-size: 15px; font-weight: 700; }
+    .item-opts { font-size: 11px; color: #A8A29E; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .item-ctrl { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+    .move-btn {
+      width: 34px; height: 40px; border-radius: 8px; border: 1px solid #E7E5E4;
+      background: white; color: #78716C; font-size: 14px; cursor: pointer;
+    }
+    .toggle {
+      width: 44px; height: 26px; border-radius: 13px; border: none;
+      background: #D6D3D1; position: relative; cursor: pointer; flex-shrink: 0;
+      transition: background 0.2s;
+    }
+    .toggle::after {
+      content: ''; position: absolute; top: 3px; left: 3px;
+      width: 20px; height: 20px; border-radius: 50%; background: white;
+      transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .toggle.on { background: #10B981; }
+    .toggle.on::after { left: 21px; }
+
+    /* ── Item editor ── */
+    .opt-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+    .opt-row .form-input { flex: 1; padding: 10px 12px; }
+    .tone-btn {
+      width: 44px; height: 44px; border-radius: 10px; border: 1.5px solid #E7E5E4;
+      background: white; font-size: 13px; font-weight: 700; cursor: pointer;
+      flex-shrink: 0; font-family: inherit;
+    }
+    .tone-btn.t-good    { background: #D1FAE5; color: #065F46; border-color: #A7F3D0; }
+    .tone-btn.t-warn    { background: #FFEDD5; color: #C2410C; border-color: #FED7AA; }
+    .tone-btn.t-bad     { background: #FEE2E2; color: #991B1B; border-color: #FECACA; }
+    .tone-btn.t-neutral { background: #F3F4F6; color: #44403C; }
+    .opt-del {
+      width: 34px; height: 44px; border: none; background: none;
+      color: #A8A29E; font-size: 18px; cursor: pointer; flex-shrink: 0;
+    }
+    .add-opt-btn {
+      width: 100%; padding: 10px; border: 1.5px dashed #FDE68A; border-radius: 12px;
+      background: none; color: #D97706; font-size: 14px; font-weight: 600;
+      cursor: pointer; font-family: inherit;
+    }
+    .check-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+    .check-row input { width: 20px; height: 20px; accent-color: #F59E0B; }
+    .check-row span { font-size: 14px; color: #44403C; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 84px; left: 50%; transform: translateX(-50%);
+      background: #1C1917; color: white; padding: 10px 20px; border-radius: 20px;
+      font-size: 14px; font-weight: 600; z-index: 100; opacity: 0;
+      transition: opacity 0.3s; pointer-events: none;
+      max-width: calc(100% - 32px); text-align: center;
+    }
+    #toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════ ホーム（巣箱一覧） ═══════════ -->
+<div class="screen active" id="scr-home">
+  <div class="header">
+    <h1>🐝 養蜂ノート</h1>
+    <button class="header-action" onclick="openHiveForm(null)">＋巣箱</button>
+  </div>
+  <div class="content" id="home-list"></div>
+</div>
+
+<!-- ═══════════ 巣箱の追加・編集 ═══════════ -->
+<div class="screen" id="scr-hive-form">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('scr-home')">←</button>
+    <h1 id="hive-form-title">巣箱を追加</h1>
+  </div>
+  <div class="content">
+    <div class="form-group">
+      <label>巣箱の名前</label>
+      <input class="form-input" id="hf-name" placeholder="例: 1号箱（庭の南側）">
+    </div>
+    <div class="form-group">
+      <label>ミツバチの種類</label>
+      <div class="seg" id="hf-species">
+        <button data-v="seiyo" onclick="pickSpecies(this)">セイヨウ</button>
+        <button data-v="nihon" onclick="pickSpecies(this)">ニホン</button>
+        <button data-v="sonota" onclick="pickSpecies(this)">その他</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>飼育開始日</label>
+      <input class="form-input" type="date" id="hf-start">
+    </div>
+    <div class="form-group">
+      <label>メモ（任意）</label>
+      <textarea class="form-input" id="hf-memo" placeholder="設置場所、群の由来など"></textarea>
+    </div>
+    <button class="btn-primary" onclick="saveHive()">保存する</button>
+    <button class="btn-danger-text" id="hf-delete" onclick="deleteHive()">この巣箱を削除</button>
+  </div>
+</div>
+
+<!-- ═══════════ 巣箱詳細（履歴タイムライン） ═══════════ -->
+<div class="screen" id="scr-hive-detail">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('scr-home')">←</button>
+    <h1 id="hd-title">巣箱</h1>
+    <button class="header-action" onclick="editCurrentHive()">編集</button>
+  </div>
+  <div class="content">
+    <button class="btn-primary" style="margin-bottom:16px" onclick="startInspection(currentHiveId)">📝 この巣箱を点検する</button>
+    <div class="section-title">点検履歴</div>
+    <div id="hd-timeline"></div>
+  </div>
+</div>
+
+<!-- ═══════════ 点検（ガイド付き） ═══════════ -->
+<div class="screen" id="scr-inspect">
+  <div class="header">
+    <button class="back-btn" onclick="cancelInspection()">←</button>
+    <h1>点検</h1>
+  </div>
+  <div class="content">
+    <!-- 巣箱と日付の選択 -->
+    <div id="ins-setup">
+      <div class="form-group">
+        <label>どの巣箱を点検しますか？</label>
+        <div class="seg" id="ins-hive-pick" style="flex-direction:column"></div>
+      </div>
+      <div class="form-group">
+        <label>点検日</label>
+        <input class="form-input" type="date" id="ins-date">
+      </div>
+      <button class="btn-primary" id="ins-start-btn" onclick="beginQuestions()" disabled>点検をはじめる</button>
+    </div>
+
+    <!-- 質問ステップ -->
+    <div id="ins-questions" style="display:none">
+      <div class="inspect-hive-label" id="ins-hive-label"></div>
+      <div class="progress-track"><div class="progress-fill" id="ins-progress"></div></div>
+      <div id="ins-q-container"></div>
+    </div>
+
+    <!-- 仕上げ（写真・メモ） -->
+    <div id="ins-finish" style="display:none">
+      <div class="inspect-hive-label" id="ins-hive-label2"></div>
+      <div class="progress-track"><div class="progress-fill" style="width:100%"></div></div>
+      <div class="q-card">
+        <div class="q-emoji">📷</div>
+        <div class="q-label">写真とメモ（任意）</div>
+        <div class="q-hint">巣板の様子などを残しておくと後で見返せます</div>
+        <div class="photo-zone">
+          <input type="file" accept="image/*" capture="environment" onchange="handleInsPhoto(this)">
+          <div id="ins-pz-inner">
+            <div class="pz-icon">📷</div>
+            <div class="pz-text">タップして撮影 / 選択</div>
+          </div>
+          <img id="ins-photo-preview" class="photo-preview-img" alt="プレビュー">
+        </div>
+        <button class="photo-remove-btn" id="ins-photo-remove" onclick="removeInsPhoto()">写真を削除</button>
+        <div class="form-group" style="margin-top:14px">
+          <textarea class="form-input" id="ins-memo" placeholder="気づいたことをメモ"></textarea>
+        </div>
+        <button class="btn-primary" onclick="saveInspection()">✅ 点検を保存する</button>
+        <div class="q-nav">
+          <button class="q-back" onclick="backToLastQuestion()">← 質問に戻る</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ 項目設定 ═══════════ -->
+<div class="screen" id="scr-settings">
+  <div class="header">
+    <h1>⚙️ 点検項目の設定</h1>
+  </div>
+  <div class="content">
+    <p style="font-size:13px;color:#78716C;line-height:1.6;margin-bottom:14px">
+      点検で聞かれる項目を自分の養蜂スタイルに合わせて変えられます。タップで編集、スイッチでON/OFF、矢印で並び替え。
+    </p>
+    <div id="settings-list"></div>
+    <button class="add-opt-btn" style="margin-top:4px" onclick="openItemEditor(null)">＋ 新しい項目を追加</button>
+    <button class="btn-ghost" onclick="restoreDefaultItems()">初期設定に戻す</button>
+  </div>
+</div>
+
+<!-- ═══════════ 項目エディタ ═══════════ -->
+<div class="screen" id="scr-item-edit">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('scr-settings')">←</button>
+    <h1 id="ie-title">項目を編集</h1>
+  </div>
+  <div class="content">
+    <div class="form-group">
+      <label>絵文字（1文字）</label>
+      <input class="form-input" id="ie-emoji" placeholder="例: 👑" maxlength="4" style="width:90px;text-align:center;font-size:24px">
+    </div>
+    <div class="form-group">
+      <label>項目名</label>
+      <input class="form-input" id="ie-label" placeholder="例: 女王蜂">
+    </div>
+    <div class="form-group">
+      <label class="check-row" style="cursor:pointer">
+        <input type="checkbox" id="ie-multi">
+        <span>複数選択できる項目にする（作業内容など）</span>
+      </label>
+    </div>
+    <div class="form-group">
+      <label>選択肢（右のボタンで色を切替: 良→注意→悪い→ふつう）</label>
+      <div id="ie-options"></div>
+      <button class="add-opt-btn" onclick="addOptionRow('', 'neutral')">＋ 選択肢を追加</button>
+    </div>
+    <button class="btn-primary" onclick="saveItem()">保存する</button>
+    <button class="btn-danger-text" id="ie-delete" onclick="deleteItem()">この項目を削除</button>
+  </div>
+</div>
+
+<!-- ═══════════ タブバー ═══════════ -->
+<div class="tabbar">
+  <button id="tab-home" onclick="goHome()"><span class="t-icon">🏠</span>巣箱</button>
+  <button class="tab-center" onclick="startInspection(null)">
+    <span class="t-circle">📝</span><span class="t-label">点検する</span>
+  </button>
+  <button id="tab-settings" onclick="goSettings()"><span class="t-icon">⚙️</span>項目設定</button>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ────────────────────────────────
+   データ
+──────────────────────────────── */
+const STORE_KEY = 'hivelog-v1';
+const TONES = ['good', 'warn', 'bad', 'neutral'];
+const TONE_LABEL = { good: '良', warn: '注意', bad: '悪い', neutral: 'ふつう' };
+const SPECIES_LABEL = { seiyo: 'セイヨウミツバチ', nihon: 'ニホンミツバチ', sonota: 'その他' };
+
+function defaultItems() {
+  return [
+    { id: 'queen',  emoji: '👑', label: '女王蜂', multi: false, enabled: true,
+      options: [ {label:'目視した', tone:'good'}, {label:'卵あり（気配OK）', tone:'good'}, {label:'確認できず', tone:'warn'}, {label:'不在の疑い', tone:'bad'} ] },
+    { id: 'brood',  emoji: '🥚', label: '卵・幼虫', multi: false, enabled: true,
+      options: [ {label:'順調', tone:'good'}, {label:'少ない', tone:'warn'}, {label:'見えない', tone:'bad'} ] },
+    { id: 'power',  emoji: '🐝', label: '群の勢い', multi: false, enabled: true,
+      options: [ {label:'強群', tone:'good'}, {label:'ふつう', tone:'neutral'}, {label:'弱群', tone:'warn'} ] },
+    { id: 'honey',  emoji: '🍯', label: '貯蜜', multi: false, enabled: true,
+      options: [ {label:'十分', tone:'good'}, {label:'ふつう', tone:'neutral'}, {label:'少ない', tone:'warn'} ] },
+    { id: 'cell',   emoji: '🏠', label: '王台', multi: false, enabled: true,
+      options: [ {label:'なし', tone:'good'}, {label:'あり（分蜂注意）', tone:'warn'} ] },
+    { id: 'mite',   emoji: '🕷️', label: 'ヘギイタダニ', multi: false, enabled: true,
+      options: [ {label:'見当たらず', tone:'good'}, {label:'発見', tone:'bad'}, {label:'対策実施', tone:'neutral'} ] },
+    { id: 'moth',   emoji: '🐛', label: 'スムシ', multi: false, enabled: true,
+      options: [ {label:'なし', tone:'good'}, {label:'発見', tone:'bad'} ] },
+    { id: 'hornet', emoji: '🚨', label: 'オオスズメバチ', multi: false, enabled: true,
+      options: [ {label:'飛来なし', tone:'good'}, {label:'飛来あり', tone:'bad'}, {label:'対策済み', tone:'neutral'} ] },
+    { id: 'mood',   emoji: '😊', label: '蜂の機嫌', multi: false, enabled: true,
+      options: [ {label:'穏やか', tone:'good'}, {label:'ふつう', tone:'neutral'}, {label:'攻撃的', tone:'warn'} ] },
+    { id: 'work',   emoji: '🔧', label: 'やった作業', multi: true, enabled: true,
+      options: [ {label:'内検のみ', tone:'neutral'}, {label:'給餌', tone:'neutral'}, {label:'採蜜', tone:'good'}, {label:'継箱', tone:'neutral'}, {label:'巣板追加', tone:'neutral'}, {label:'掃除', tone:'neutral'}, {label:'ダニ対策', tone:'neutral'} ] },
+  ];
+}
+
+let state = load();
+function load() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (s.hives && s.inspections && s.items) return s;
+    }
+  } catch (e) {}
+  return { hives: [], inspections: [], items: defaultItems() };
+}
+function persist() {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    return true;
+  } catch (e) {
+    alert('保存に失敗しました。写真が多く容量オーバーの可能性があります。古い記録の写真を削除してみてください。');
+    return false;
+  }
+}
+
+function uid()  { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function fmtDate(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  const youbi = ['日','月','火','水','木','金','土'][dt.getDay()];
+  return `${y}年${m}月${d}日（${youbi}）`;
+}
+function daysAgo(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const diff = Math.floor((new Date().setHours(0,0,0,0) - new Date(y, m-1, d).getTime()) / 86400000);
+  if (diff <= 0) return '今日';
+  if (diff === 1) return '昨日';
+  return `${diff}日前`;
+}
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+/* ────────────────────────────────
+   画面遷移
+──────────────────────────────── */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById('tab-home').classList.toggle('active', id === 'scr-home' || id === 'scr-hive-detail');
+  document.getElementById('tab-settings').classList.toggle('active', id === 'scr-settings' || id === 'scr-item-edit');
+  window.scrollTo(0, 0);
+}
+function goHome()     { renderHome(); showScreen('scr-home'); }
+function goSettings() { renderSettings(); showScreen('scr-settings'); }
+
+/* ────────────────────────────────
+   ホーム
+──────────────────────────────── */
+function hiveLastInspection(hiveId) {
+  const list = state.inspections.filter(i => i.hiveId === hiveId);
+  if (!list.length) return null;
+  return list.sort((a, b) => b.date.localeCompare(a.date) || b.ts - a.ts)[0];
+}
+function worstTone(insp) {
+  let worst = 'good', rank = { bad: 3, warn: 2, neutral: 1, good: 0 }, max = -1;
+  let found = false;
+  for (const arr of Object.values(insp.answers)) {
+    for (const a of arr) {
+      if (a.tone === 'neutral') continue;
+      found = true;
+      if (rank[a.tone] > max) { max = rank[a.tone]; worst = a.tone; }
+    }
+  }
+  return found ? worst : 'neutral';
+}
+function renderHome() {
+  const el = document.getElementById('home-list');
+  if (!state.hives.length) {
+    el.innerHTML = `<div class="empty">
+      <div class="icon">🐝</div>
+      <p>まだ巣箱がありません。<br>右上の「＋巣箱」から<br>最初の巣箱を登録しましょう。</p>
+    </div>`;
+    return;
+  }
+  el.innerHTML = state.hives.map(h => {
+    const last = hiveLastInspection(h.id);
+    let dot = 'dot-none', lastTxt = '点検記録なし', alerts = '';
+    if (last) {
+      const tone = worstTone(last);
+      dot = tone === 'bad' ? 'dot-bad' : tone === 'warn' ? 'dot-warn' : tone === 'good' ? 'dot-good' : 'dot-none';
+      lastTxt = `最終点検: ${daysAgo(last.date)}`;
+      const bads = [];
+      for (const [itemId, arr] of Object.entries(last.answers)) {
+        const item = state.items.find(i => i.id === itemId);
+        for (const a of arr) {
+          if (a.tone === 'bad' || a.tone === 'warn') {
+            bads.push(`<span class="achip tone-${a.tone}">${item ? esc(item.label) + ': ' : ''}${esc(a.label)}</span>`);
+          }
+        }
+      }
+      if (bads.length) alerts = `<div class="hive-alerts">${bads.join('')}</div>`;
+    }
+    return `<div class="hive-card" onclick="openHiveDetail('${h.id}')">
+      <div class="hive-card-top">
+        <div class="hive-icon">🛖</div>
+        <div class="hive-info">
+          <div class="hive-name">${esc(h.name)}</div>
+          <div class="hive-meta">
+            <span class="badge badge-${h.species}">${SPECIES_LABEL[h.species] || 'その他'}</span>
+            <span>${lastTxt}</span>
+          </div>
+        </div>
+        <div class="status-dot ${dot}"></div>
+      </div>
+      ${alerts}
+    </div>`;
+  }).join('');
+}
+
+/* ────────────────────────────────
+   巣箱の追加・編集
+──────────────────────────────── */
+let editHiveId = null;
+function pickSpecies(btn) {
+  document.querySelectorAll('#hf-species button').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+}
+function openHiveForm(hiveId) {
+  editHiveId = hiveId;
+  const h = hiveId ? state.hives.find(x => x.id === hiveId) : null;
+  document.getElementById('hive-form-title').textContent = h ? '巣箱を編集' : '巣箱を追加';
+  document.getElementById('hf-name').value  = h ? h.name : '';
+  document.getElementById('hf-start').value = h ? h.start : todayStr();
+  document.getElementById('hf-memo').value  = h ? h.memo : '';
+  document.querySelectorAll('#hf-species button').forEach(b => {
+    b.classList.toggle('sel', b.dataset.v === (h ? h.species : 'seiyo'));
+  });
+  document.getElementById('hf-delete').style.display = h ? 'block' : 'none';
+  showScreen('scr-hive-form');
+}
+function saveHive() {
+  const name = document.getElementById('hf-name').value.trim();
+  if (!name) { alert('巣箱の名前を入れてください'); return; }
+  const species = document.querySelector('#hf-species button.sel').dataset.v;
+  const start = document.getElementById('hf-start').value || todayStr();
+  const memo = document.getElementById('hf-memo').value.trim();
+  if (editHiveId) {
+    const h = state.hives.find(x => x.id === editHiveId);
+    Object.assign(h, { name, species, start, memo });
+  } else {
+    state.hives.push({ id: uid(), name, species, start, memo });
+  }
+  if (persist()) { toast('保存しました'); goHome(); }
+}
+function deleteHive() {
+  const h = state.hives.find(x => x.id === editHiveId);
+  if (!confirm(`「${h.name}」とその点検記録をすべて削除します。よろしいですか？`)) return;
+  state.hives = state.hives.filter(x => x.id !== editHiveId);
+  state.inspections = state.inspections.filter(i => i.hiveId !== editHiveId);
+  persist();
+  toast('削除しました');
+  goHome();
+}
+
+/* ────────────────────────────────
+   巣箱詳細（タイムライン）
+──────────────────────────────── */
+let currentHiveId = null;
+function openHiveDetail(hiveId) {
+  currentHiveId = hiveId;
+  const h = state.hives.find(x => x.id === hiveId);
+  document.getElementById('hd-title').textContent = h.name;
+  renderTimeline();
+  showScreen('scr-hive-detail');
+}
+function editCurrentHive() { openHiveForm(currentHiveId); }
+function renderTimeline() {
+  const el = document.getElementById('hd-timeline');
+  const list = state.inspections
+    .filter(i => i.hiveId === currentHiveId)
+    .sort((a, b) => b.date.localeCompare(a.date) || b.ts - a.ts);
+  if (!list.length) {
+    el.innerHTML = `<div class="empty"><div class="icon">📋</div><p>まだ点検記録がありません。<br>上のボタンから最初の点検をどうぞ。</p></div>`;
+    return;
+  }
+  el.innerHTML = list.map(insp => {
+    const chips = [];
+    const rows = [];
+    for (const item of state.items) {
+      const arr = insp.answers[item.id];
+      if (!arr || !arr.length) continue;
+      for (const a of arr) chips.push(`<span class="achip tone-${a.tone}">${esc(a.label)}</span>`);
+      rows.push(`<div class="tl-row">
+        <span class="tl-q">${item.emoji} ${esc(item.label)}</span>
+        <span class="tl-a">${arr.map(a => `<span class="achip tone-${a.tone}">${esc(a.label)}</span>`).join(' ')}</span>
+      </div>`);
+    }
+    // 削除済みカスタム項目の回答も表示
+    for (const [itemId, arr] of Object.entries(insp.answers)) {
+      if (state.items.find(i => i.id === itemId)) continue;
+      for (const a of arr) chips.push(`<span class="achip tone-${a.tone}">${esc(a.label)}</span>`);
+    }
+    return `<div class="tl-entry" id="tl-${insp.id}" onclick="toggleEntry('${insp.id}')">
+      <div class="tl-date">${fmtDate(insp.date)} <span style="color:#A8A29E;font-weight:400">・${daysAgo(insp.date)}</span></div>
+      <div class="tl-chips">${chips.join('') || '<span style="font-size:12px;color:#A8A29E">記録項目なし</span>'}</div>
+      <div class="tl-detail" onclick="event.stopPropagation()">
+        ${rows.join('')}
+        ${insp.photo ? `<img class="tl-photo" src="${insp.photo}" alt="点検写真">` : ''}
+        ${insp.memo ? `<div class="tl-memo">${esc(insp.memo)}</div>` : ''}
+        <button class="btn-danger-text" onclick="deleteInspection('${insp.id}')">この記録を削除</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function toggleEntry(id) {
+  document.getElementById('tl-' + id).classList.toggle('open');
+}
+function deleteInspection(id) {
+  if (!confirm('この点検記録を削除しますか？')) return;
+  state.inspections = state.inspections.filter(i => i.id !== id);
+  persist();
+  renderTimeline();
+  toast('削除しました');
+}
+
+/* ────────────────────────────────
+   点検フロー
+──────────────────────────────── */
+let ins = null; // { hiveId, date, qIndex, answers, photo, memo }
+
+function startInspection(hiveId) {
+  if (!state.hives.length) {
+    toast('まず巣箱を登録してください');
+    openHiveForm(null);
+    return;
+  }
+  ins = { hiveId: hiveId, date: todayStr(), qIndex: 0, answers: {}, photo: null };
+  document.getElementById('ins-setup').style.display = 'block';
+  document.getElementById('ins-questions').style.display = 'none';
+  document.getElementById('ins-finish').style.display = 'none';
+  document.getElementById('ins-date').value = ins.date;
+  document.getElementById('ins-memo').value = '';
+  removeInsPhoto();
+  // 巣箱選択肢
+  const pick = document.getElementById('ins-hive-pick');
+  pick.innerHTML = state.hives.map(h =>
+    `<button data-id="${h.id}" onclick="pickInsHive(this)" style="min-width:100%">${esc(h.name)}</button>`
+  ).join('');
+  if (hiveId) {
+    const btn = pick.querySelector(`[data-id="${hiveId}"]`);
+    if (btn) btn.classList.add('sel');
+  } else if (state.hives.length === 1) {
+    pick.querySelector('button').classList.add('sel');
+    ins.hiveId = state.hives[0].id;
+  }
+  document.getElementById('ins-start-btn').disabled = !ins.hiveId;
+  showScreen('scr-inspect');
+}
+function pickInsHive(btn) {
+  document.querySelectorAll('#ins-hive-pick button').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  ins.hiveId = btn.dataset.id;
+  document.getElementById('ins-start-btn').disabled = false;
+}
+function enabledItems() { return state.items.filter(i => i.enabled && i.options.length); }
+function beginQuestions() {
+  ins.date = document.getElementById('ins-date').value || todayStr();
+  const h = state.hives.find(x => x.id === ins.hiveId);
+  document.getElementById('ins-hive-label').textContent = `🛖 ${h.name}`;
+  document.getElementById('ins-hive-label2').textContent = `🛖 ${h.name}`;
+  document.getElementById('ins-setup').style.display = 'none';
+  if (!enabledItems().length) { showFinish(); return; }
+  ins.qIndex = 0;
+  document.getElementById('ins-questions').style.display = 'block';
+  renderQuestion();
+}
+function renderQuestion() {
+  const items = enabledItems();
+  const item = items[ins.qIndex];
+  document.getElementById('ins-progress').style.width = (ins.qIndex / (items.length + 1) * 100) + '%';
+  const selected = ins.answers[item.id] || [];
+  const isSel = label => selected.some(a => a.label === label);
+  const c = document.getElementById('ins-q-container');
+  c.innerHTML = `<div class="q-card">
+    <div class="q-emoji">${item.emoji}</div>
+    <div class="q-label">${esc(item.label)}</div>
+    <div class="q-hint">${item.multi ? '当てはまるものをすべてタップ' : '1つ選んでタップ（自動で次へ）'} ・ ${ins.qIndex + 1}/${items.length}</div>
+    <div class="q-options">
+      ${item.options.map((o, i) =>
+        `<button class="${isSel(o.label) ? 'sel' : ''}" onclick="answerQuestion(${i})">${esc(o.label)}</button>`
+      ).join('')}
+    </div>
+    <div class="q-nav">
+      ${ins.qIndex > 0 ? '<button class="q-back" onclick="prevQuestion()">← 戻る</button>' : '<button class="q-back" onclick="backToSetup()">← 最初へ</button>'}
+      ${item.multi
+        ? '<button class="q-next" onclick="nextQuestion()">次へ →</button>'
+        : '<button class="q-skip" onclick="skipQuestion()">スキップ</button>'}
+    </div>
+  </div>`;
+}
+let advancing = false;
+function answerQuestion(optIndex) {
+  const item = enabledItems()[ins.qIndex];
+  const opt = item.options[optIndex];
+  const ans = { label: opt.label, tone: opt.tone };
+  if (item.multi) {
+    const arr = ins.answers[item.id] || [];
+    const idx = arr.findIndex(a => a.label === ans.label);
+    if (idx >= 0) arr.splice(idx, 1); else arr.push(ans);
+    ins.answers[item.id] = arr;
+    renderQuestion();
+  } else {
+    ins.answers[item.id] = [ans];
+    renderQuestion();
+    if (advancing) return;
+    advancing = true;
+    setTimeout(() => { advancing = false; nextQuestion(); }, 220);
+  }
+}
+function nextQuestion() {
+  const item = ins.answers && enabledItems()[ins.qIndex];
+  if (item && item.multi && ins.answers[item.id] && !ins.answers[item.id].length) delete ins.answers[item.id];
+  if (ins.qIndex + 1 >= enabledItems().length) { showFinish(); return; }
+  ins.qIndex++;
+  renderQuestion();
+}
+function skipQuestion() {
+  const item = enabledItems()[ins.qIndex];
+  delete ins.answers[item.id];
+  nextQuestion();
+}
+function prevQuestion() {
+  if (ins.qIndex > 0) { ins.qIndex--; renderQuestion(); }
+}
+function backToSetup() {
+  document.getElementById('ins-questions').style.display = 'none';
+  document.getElementById('ins-setup').style.display = 'block';
+}
+function showFinish() {
+  document.getElementById('ins-questions').style.display = 'none';
+  document.getElementById('ins-finish').style.display = 'block';
+  window.scrollTo(0, 0);
+}
+function backToLastQuestion() {
+  const items = enabledItems();
+  if (!items.length) { backToSetup(); document.getElementById('ins-finish').style.display = 'none'; return; }
+  ins.qIndex = items.length - 1;
+  document.getElementById('ins-finish').style.display = 'none';
+  document.getElementById('ins-questions').style.display = 'block';
+  renderQuestion();
+}
+function cancelInspection() {
+  const answered = ins && Object.keys(ins.answers).length > 0;
+  if (answered && !confirm('点検を中断しますか？入力した内容は保存されません。')) return;
+  ins = null;
+  goHome();
+}
+function saveInspection() {
+  ins.memo = document.getElementById('ins-memo').value.trim();
+  state.inspections.push({
+    id: uid(), hiveId: ins.hiveId, date: ins.date, ts: Date.now(),
+    answers: ins.answers, photo: ins.photo, memo: ins.memo,
+  });
+  if (!persist()) return;
+  const hiveId = ins.hiveId;
+  ins = null;
+  toast('点検を保存しました 🐝');
+  openHiveDetail(hiveId);
+}
+
+/* ────────────────────────────────
+   写真
+──────────────────────────────── */
+function handleInsPhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  compressImage(file, base64 => {
+    ins.photo = base64;
+    document.getElementById('ins-pz-inner').style.display = 'none';
+    const img = document.getElementById('ins-photo-preview');
+    img.src = base64;
+    img.style.display = 'block';
+    document.getElementById('ins-photo-remove').style.display = 'block';
+  });
+}
+function removeInsPhoto() {
+  if (ins) ins.photo = null;
+  document.getElementById('ins-pz-inner').style.display = 'block';
+  const img = document.getElementById('ins-photo-preview');
+  img.src = ''; img.style.display = 'none';
+  document.getElementById('ins-photo-remove').style.display = 'none';
+}
+function compressImage(file, callback) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 900;
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) {
+        if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+        else       { w = Math.round(w * MAX / h); h = MAX; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      callback(canvas.toDataURL('image/jpeg', 0.78));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ────────────────────────────────
+   項目設定
+──────────────────────────────── */
+function renderSettings() {
+  const el = document.getElementById('settings-list');
+  el.innerHTML = state.items.map((item, i) => `
+    <div class="item-row ${item.enabled ? '' : 'off'}">
+      <span class="item-emoji">${item.emoji}</span>
+      <div class="item-main" onclick="openItemEditor('${item.id}')">
+        <div class="item-label">${esc(item.label)}${item.multi ? ' <span style="font-size:10px;color:#A8A29E">複数選択</span>' : ''}</div>
+        <div class="item-opts">${item.options.map(o => esc(o.label)).join(' / ')}</div>
+      </div>
+      <div class="item-ctrl">
+        <button class="move-btn" onclick="moveItem(${i}, -1)" ${i === 0 ? 'disabled style="opacity:0.3"' : ''}>↑</button>
+        <button class="move-btn" onclick="moveItem(${i}, 1)" ${i === state.items.length - 1 ? 'disabled style="opacity:0.3"' : ''}>↓</button>
+        <button class="toggle ${item.enabled ? 'on' : ''}" onclick="toggleItem('${item.id}')" aria-label="有効/無効"></button>
+      </div>
+    </div>`).join('');
+}
+function moveItem(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= state.items.length) return;
+  [state.items[i], state.items[j]] = [state.items[j], state.items[i]];
+  persist();
+  renderSettings();
+}
+function toggleItem(id) {
+  const item = state.items.find(x => x.id === id);
+  item.enabled = !item.enabled;
+  persist();
+  renderSettings();
+}
+function restoreDefaultItems() {
+  if (!confirm('点検項目を初期設定に戻します。自分で追加・編集した項目は消えます（過去の記録は残ります）。よろしいですか？')) return;
+  state.items = defaultItems();
+  persist();
+  renderSettings();
+  toast('初期設定に戻しました');
+}
+
+/* ────────────────────────────────
+   項目エディタ
+──────────────────────────────── */
+let editItemId = null;
+function openItemEditor(itemId) {
+  editItemId = itemId;
+  const item = itemId ? state.items.find(x => x.id === itemId) : null;
+  document.getElementById('ie-title').textContent = item ? '項目を編集' : '新しい項目';
+  document.getElementById('ie-emoji').value = item ? item.emoji : '📌';
+  document.getElementById('ie-label').value = item ? item.label : '';
+  document.getElementById('ie-multi').checked = item ? item.multi : false;
+  document.getElementById('ie-delete').style.display = item ? 'block' : 'none';
+  const box = document.getElementById('ie-options');
+  box.innerHTML = '';
+  const opts = item ? item.options : [{label:'', tone:'good'}, {label:'', tone:'warn'}];
+  opts.forEach(o => addOptionRow(o.label, o.tone));
+  showScreen('scr-item-edit');
+}
+function addOptionRow(label, tone) {
+  const box = document.getElementById('ie-options');
+  const row = document.createElement('div');
+  row.className = 'opt-row';
+  row.innerHTML = `
+    <input class="form-input" value="${esc(label)}" placeholder="選択肢の文言">
+    <button class="tone-btn t-${tone}" data-tone="${tone}" onclick="cycleTone(this)">${TONE_LABEL[tone]}</button>
+    <button class="opt-del" onclick="this.parentElement.remove()">✕</button>`;
+  box.appendChild(row);
+}
+function cycleTone(btn) {
+  const cur = TONES.indexOf(btn.dataset.tone);
+  const next = TONES[(cur + 1) % TONES.length];
+  btn.dataset.tone = next;
+  btn.className = 'tone-btn t-' + next;
+  btn.textContent = TONE_LABEL[next];
+}
+function saveItem() {
+  const label = document.getElementById('ie-label').value.trim();
+  if (!label) { alert('項目名を入れてください'); return; }
+  const emoji = document.getElementById('ie-emoji').value.trim() || '📌';
+  const multi = document.getElementById('ie-multi').checked;
+  const options = [];
+  document.querySelectorAll('#ie-options .opt-row').forEach(row => {
+    const text = row.querySelector('input').value.trim();
+    if (text) options.push({ label: text, tone: row.querySelector('.tone-btn').dataset.tone });
+  });
+  if (!options.length) { alert('選択肢を1つ以上入れてください'); return; }
+  if (editItemId) {
+    const item = state.items.find(x => x.id === editItemId);
+    Object.assign(item, { label, emoji, multi, options });
+  } else {
+    state.items.push({ id: uid(), label, emoji, multi, options, enabled: true });
+  }
+  if (persist()) { toast('保存しました'); goSettings(); }
+}
+function deleteItem() {
+  const item = state.items.find(x => x.id === editItemId);
+  if (!confirm(`項目「${item.label}」を削除しますか？（過去の記録は残ります）`)) return;
+  state.items = state.items.filter(x => x.id !== editItemId);
+  persist();
+  toast('削除しました');
+  goSettings();
+}
+
+/* ── 初期表示 ── */
+renderHome();
+</script>
+</body>
+</html>
