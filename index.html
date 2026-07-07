@@ -2,8 +2,14 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mead Log</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#F59E0B">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Mead Log">
+  <link rel="apple-touch-icon" href="icon-180.png">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -232,6 +238,44 @@
     .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #78716C; }
     .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 
+    /* ── OCR ── */
+    .ocr-btn {
+      display: none; width: 100%; margin-top: 8px;
+      padding: 10px; background: white; color: #92400E;
+      border: 1.5px solid #F59E0B; border-radius: 10px;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+    .ocr-btn:disabled { opacity: 0.5; }
+    .ocr-status { font-size: 12px; color: #A8A29E; margin-top: 6px; min-height: 16px; }
+    .ocr-results { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+    .ocr-chip {
+      padding: 8px 12px; border-radius: 16px; border: 1.5px solid #FDE68A;
+      background: white; font-size: 13px; cursor: pointer; color: #1C1917;
+      max-width: 100%; word-break: break-word; text-align: left;
+    }
+    .ocr-chip.used { background: #F59E0B; border-color: #F59E0B; color: white; }
+
+    /* ── Tags ── */
+    .d-tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .d-tag {
+      font-size: 12px; font-weight: 600; padding: 3px 10px;
+      border-radius: 12px; background: #FEF3C7; color: #92400E;
+    }
+
+    /* ── Backup ── */
+    .backup-card {
+      background: white; border-radius: 14px; padding: 14px;
+      border: 1px solid #FDE68A; margin-top: 20px;
+    }
+    .backup-btns { display: flex; gap: 10px; }
+    .backup-btn {
+      flex: 1; padding: 12px 4px; background: #FFFDF7; color: #92400E;
+      border: 1.5px solid #FDE68A; border-radius: 10px;
+      font-size: 13px; font-weight: 600; cursor: pointer; text-align: center;
+    }
+    .backup-btn:active { background: #FEF3C7; }
+    .backup-hint { font-size: 11px; color: #A8A29E; margin-top: 8px; line-height: 1.6; }
+
     /* ── Lock screen ── */
     #lock-screen {
       position: fixed; inset: 0; z-index: 100;
@@ -330,6 +374,9 @@
         <img id="photo-preview-img" class="photo-preview-img" alt="プレビュー">
       </div>
       <button class="photo-remove-btn" id="photo-remove-btn" onclick="removePhoto()">写真を削除</button>
+      <button class="ocr-btn" id="ocr-btn" onclick="runOcr()">🔎 ラベルの文字を読み取る</button>
+      <p class="ocr-status" id="ocr-status"></p>
+      <div class="ocr-results" id="ocr-results"></div>
     </div>
 
     <!-- 基本情報 -->
@@ -362,6 +409,11 @@
         <button class="style-pill" data-style="braggot"     onclick="pickStyle(this)">ブラゴット</button>
         <button class="style-pill" data-style="other"       onclick="pickStyle(this)">その他</button>
       </div>
+    </div>
+
+    <div class="form-group">
+      <label>味タグ（当てはまるものをタップ・複数可）</label>
+      <div class="style-pills" id="tag-pills"></div>
     </div>
 
     <div class="form-group">
@@ -407,6 +459,7 @@
       <div class="detail-name"    id="d-name"></div>
       <div class="detail-brewery" id="d-brewery"></div>
       <div style="margin-top:8px;"><span id="d-badge" class="badge"></span></div>
+      <div class="d-tag-row" id="d-tags"></div>
       <div class="detail-date"    id="d-date"></div>
       <a id="d-url" class="detail-url" href="#" target="_blank" rel="noopener" style="display:none;">
         🔗 <span id="d-url-text"></span>
@@ -462,6 +515,8 @@ const DOT_COLORS = {
   other:       '#8B5CF6',
 };
 
+const TAGS = ['花の香り','柑橘','ベリー','りんご','スパイス','樽香','微発泡','濃厚','すっきり','デザート向き'];
+
 let meads     = [];
 let currentId = null;
 
@@ -471,6 +526,7 @@ let editPos   = { x: 0.5, y: 0.5 };
 let editStyle = 'traditional';
 let editChart = null;
 let editPhoto = null;  // base64 or null
+let editTags  = [];
 
 function load() { try { meads = JSON.parse(localStorage.getItem(KEY)) || []; } catch { meads = []; } }
 function save() {
@@ -524,6 +580,7 @@ function showPhotoPreview(base64) {
   preview.src = base64;
   preview.style.display = 'block';
   removeBtn.style.display = 'block';
+  document.getElementById('ocr-btn').style.display = 'block';
 }
 
 function clearPhotoPreview() {
@@ -535,6 +592,7 @@ function clearPhotoPreview() {
   preview.src = '';
   removeBtn.style.display = 'none';
   document.getElementById('f-photo').value = '';
+  clearOcrUi();
 }
 
 function removePhoto() {
@@ -555,6 +613,19 @@ function showScreen(name) {
 /* ────────────────────────────────
    HOME
 ──────────────────────────────── */
+function backupCardHtml() {
+  return `
+    <div class="backup-card">
+      <p class="section-title" style="margin-top:0;">データのバックアップ</p>
+      <div class="backup-btns">
+        <button class="backup-btn" onclick="exportData()">📤 書き出す</button>
+        <button class="backup-btn" onclick="document.getElementById('import-file').click()">📥 読み込む</button>
+      </div>
+      <input type="file" id="import-file" accept=".json,application/json" onchange="importData(this)" style="display:none;">
+      <p class="backup-hint">記録はこのスマホの中だけに保存されています。機種変更や消失に備えて、ときどき「書き出す」でファイルを保存しておきましょう。</p>
+    </div>`;
+}
+
 function renderHome() {
   const el = document.getElementById('home-list');
   if (!meads.length) {
@@ -562,7 +633,7 @@ function renderHome() {
       <div class="empty">
         <div class="icon">🍯</div>
         <p>まだミードの記録がありません。<br>「＋」ボタンで最初の記録を追加しよう！</p>
-      </div>`;
+      </div>` + backupCardHtml();
     return;
   }
 
@@ -583,7 +654,7 @@ function renderHome() {
           </div>
         </div>
       </div>`;
-  }).join('');
+  }).join('') + backupCardHtml();
 
   // ミニレーダー（写真なしのものだけ）
   setTimeout(() => {
@@ -647,6 +718,10 @@ function openDetail(id) {
   badge.textContent = STYLES[m.style] || m.style;
   badge.className   = `badge badge-${m.style}`;
 
+  // 味タグ
+  const tagRow = document.getElementById('d-tags');
+  tagRow.innerHTML = (m.tags || []).map(t => `<span class="d-tag">${esc(t)}</span>`).join('');
+
   // URL
   const urlEl    = document.getElementById('d-url');
   const urlText  = document.getElementById('d-url-text');
@@ -690,6 +765,9 @@ function renderDetailQuad(m) {
 ──────────────────────────────── */
 function openAdd() {
   editId = null; editPos = {x:0.5, y:0.5}; editStyle = 'traditional'; editPhoto = null;
+  editTags = [];
+  buildTagPills();
+  clearOcrUi();
   document.getElementById('edit-title').textContent = 'ミードを記録';
   document.getElementById('f-name').value    = '';
   document.getElementById('f-brewery').value = '';
@@ -708,6 +786,9 @@ function openEdit(id) {
   const m = meads.find(x => x.id === id);
   if (!m) return;
   editId = id; editPos = {...m.position}; editStyle = m.style; editPhoto = m.photo || null;
+  editTags = [...(m.tags || [])];
+  buildTagPills();
+  clearOcrUi();
   document.getElementById('edit-title').textContent = '編集';
   document.getElementById('f-name').value    = m.name;
   document.getElementById('f-brewery').value = m.brewery || '';
@@ -765,6 +846,7 @@ function saveMead() {
     style:    editStyle,
     position: {...editPos},
     scores,
+    tags:     [...editTags],
     notes:    document.getElementById('f-notes').value.trim(),
     photo:    editPhoto,
   };
@@ -990,6 +1072,142 @@ function drawDot(ctx, px, py, color, r) {
    UTILS
 ──────────────────────────────── */
 function today() { return new Date().toISOString().slice(0,10); }
+
+/* ────────────────────────────────
+   TASTE TAGS
+──────────────────────────────── */
+function buildTagPills() {
+  document.getElementById('tag-pills').innerHTML = TAGS.map(t => `
+    <button class="style-pill${editTags.includes(t) ? ' selected' : ''}"
+      onclick="toggleTag(this)" data-tag="${esc(t)}">${esc(t)}</button>`).join('');
+}
+
+function toggleTag(btn) {
+  const t = btn.dataset.tag;
+  if (editTags.includes(t)) {
+    editTags = editTags.filter(x => x !== t);
+    btn.classList.remove('selected');
+  } else {
+    editTags.push(t);
+    btn.classList.add('selected');
+  }
+}
+
+/* ────────────────────────────────
+   BACKUP (export / import)
+──────────────────────────────── */
+function exportData() {
+  const payload = { app: 'mead-log', version: 1, exported: new Date().toISOString(), meads };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `mead-log-backup-${today()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+}
+
+function importData(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    input.value = '';
+    let list;
+    try {
+      const data = JSON.parse(e.target.result);
+      list = Array.isArray(data) ? data : data.meads;
+      if (!Array.isArray(list)) throw new Error();
+    } catch {
+      alert('このファイルは読み込めませんでした。「書き出す」で保存したファイルを選んでください。');
+      return;
+    }
+    const valid = list.filter(m => m && m.id && m.name);
+    if (!valid.length) { alert('記録が見つかりませんでした。'); return; }
+    if (!confirm(`${valid.length}件の記録が見つかりました。読み込みますか？\n（同じ記録がある場合はファイルの内容で上書きされます）`)) return;
+    valid.forEach(m => {
+      const i = meads.findIndex(x => x.id === m.id);
+      if (i !== -1) meads[i] = m; else meads.push(m);
+    });
+    save();
+    renderHome();
+    alert('読み込みが完了しました！');
+  };
+  reader.readAsText(file);
+}
+
+/* ────────────────────────────────
+   OCR (ラベル文字読み取り / Tesseract.js)
+──────────────────────────────── */
+function clearOcrUi() {
+  const btn = document.getElementById('ocr-btn');
+  btn.style.display = 'none';
+  btn.disabled = false;
+  document.getElementById('ocr-status').textContent = '';
+  document.getElementById('ocr-results').innerHTML = '';
+}
+
+function loadTesseract() {
+  return new Promise((resolve, reject) => {
+    if (window.Tesseract) return resolve();
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+    s.onload = resolve;
+    s.onerror = () => reject(new Error('script load failed'));
+    document.head.appendChild(s);
+  });
+}
+
+async function runOcr() {
+  if (!editPhoto) return;
+  const btn    = document.getElementById('ocr-btn');
+  const status = document.getElementById('ocr-status');
+  const box    = document.getElementById('ocr-results');
+  btn.disabled = true;
+  box.innerHTML = '';
+  status.textContent = '準備中…（初回は読み取り用データの取得に少し時間がかかります）';
+  try {
+    await loadTesseract();
+    const worker = await Tesseract.createWorker('jpn+eng', 1, {
+      logger: m => {
+        if (m.status === 'recognizing text') {
+          status.textContent = `文字を読み取り中… ${Math.round(m.progress * 100)}%`;
+        }
+      }
+    });
+    const { data } = await worker.recognize(editPhoto);
+    await worker.terminate();
+    const lines = (data.text || '')
+      .split('\n')
+      .map(s => s.replace(/\s+/g, ' ').trim())
+      .filter(s => s.replace(/[^0-9A-Za-zぁ-んァ-ヶ一-龠ー]/g, '').length >= 2)
+      .slice(0, 8);
+    if (!lines.length) {
+      status.textContent = '文字を読み取れませんでした。ラベルが大きく写るように撮り直してみてください。';
+    } else {
+      status.textContent = '読み取れた行をタップすると入力されます（空いている方の欄: ミード名→醸造元）';
+      box.innerHTML = lines.map(l => `<button class="ocr-chip" onclick="useOcrText(this)">${esc(l)}</button>`).join('');
+    }
+  } catch (err) {
+    status.textContent = '読み取りに失敗しました。電波の良い場所でもう一度試してください。';
+  }
+  btn.disabled = false;
+}
+
+function useOcrText(chip) {
+  const text    = chip.textContent;
+  const nameEl  = document.getElementById('f-name');
+  const brewEl  = document.getElementById('f-brewery');
+  let target;
+  if (!nameEl.value.trim())      target = nameEl;
+  else if (!brewEl.value.trim()) target = brewEl;
+  else                           target = nameEl;
+  target.value = text;
+  chip.classList.add('used');
+  document.getElementById('ocr-status').textContent =
+    (target === nameEl ? 'ミード名' : '醸造元') + 'に入力しました';
+}
 
 /* ────────────────────────────────
    PIN LOCK
