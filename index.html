@@ -243,28 +243,20 @@
     .lock-icon  { font-size: 64px; }
     .lock-title { font-size: 22px; font-weight: 700; color: #92400E; }
     .lock-sub   { font-size: 14px; color: #A8A29E; margin-top: -16px; }
-    .pin-dots {
-      display: flex; gap: 16px;
-    }
-    .pin-dot {
-      width: 18px; height: 18px; border-radius: 50%;
-      border: 2px solid #FDE68A; background: white;
-      transition: background 0.15s, border-color 0.15s;
-    }
-    .pin-dot.filled { background: #F59E0B; border-color: #F59E0B; }
-    .pin-keypad {
-      display: grid; grid-template-columns: repeat(3, 1fr);
-      gap: 12px; width: 100%; max-width: 280px;
-    }
-    .pin-key {
-      padding: 18px 0; border-radius: 14px;
+    .pass-form { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 280px; }
+    .pass-input {
+      padding: 14px 16px; border-radius: 14px;
       border: 1.5px solid #FDE68A; background: white;
-      font-size: 22px; font-weight: 600; color: #1C1917;
-      cursor: pointer; transition: background 0.1s;
-      text-align: center;
+      font-size: 16px; text-align: center; color: #1C1917;
+      outline: none;
     }
-    .pin-key:active { background: #FEF3C7; }
-    .pin-key.del    { font-size: 18px; color: #78716C; }
+    .pass-input:focus { border-color: #F59E0B; }
+    .pass-btn {
+      padding: 14px 0; border-radius: 14px; border: none;
+      background: #F59E0B; color: white;
+      font-size: 16px; font-weight: 700; cursor: pointer;
+    }
+    .pass-btn:active { opacity: 0.85; }
     .lock-error {
       font-size: 14px; color: #DC2626; font-weight: 600;
       min-height: 20px;
@@ -279,28 +271,12 @@
 <div id="lock-screen">
   <div class="lock-icon">🍯</div>
   <div class="lock-title">Mead Log</div>
-  <div class="lock-sub">PINを入力してください</div>
-  <div class="pin-dots">
-    <div class="pin-dot" id="dot-0"></div>
-    <div class="pin-dot" id="dot-1"></div>
-    <div class="pin-dot" id="dot-2"></div>
-    <div class="pin-dot" id="dot-3"></div>
-  </div>
+  <div class="lock-sub">合言葉を入力してください</div>
   <div class="lock-error" id="lock-error"></div>
-  <div class="pin-keypad">
-    <button class="pin-key" onclick="pinInput('1')">1</button>
-    <button class="pin-key" onclick="pinInput('2')">2</button>
-    <button class="pin-key" onclick="pinInput('3')">3</button>
-    <button class="pin-key" onclick="pinInput('4')">4</button>
-    <button class="pin-key" onclick="pinInput('5')">5</button>
-    <button class="pin-key" onclick="pinInput('6')">6</button>
-    <button class="pin-key" onclick="pinInput('7')">7</button>
-    <button class="pin-key" onclick="pinInput('8')">8</button>
-    <button class="pin-key" onclick="pinInput('9')">9</button>
-    <div></div>
-    <button class="pin-key" onclick="pinInput('0')">0</button>
-    <button class="pin-key del" onclick="pinDelete()">⌫</button>
-  </div>
+  <form class="pass-form" onsubmit="checkPass(event)">
+    <input type="password" class="pass-input" id="pass-input" placeholder="合言葉" autocomplete="current-password">
+    <button type="submit" class="pass-btn">開ける</button>
+  </form>
 </div>
 
 <!-- ═══════════════════════════════
@@ -1018,45 +994,26 @@ function today() { return new Date().toISOString().slice(0,10); }
 /* ────────────────────────────────
    PIN LOCK
 ──────────────────────────────── */
-// PINそのものは保存せず、SHA-256ハッシュ（一方向の変換値）だけを保持する
-const PIN_HASH = '48e1ff78f2967629663434954e7034e9a16116b94c678174f080fb20509144dc';
-let pinEntry = '';
+// 合言葉そのものは保存せず、SHA-256ハッシュ（一方向の変換値）だけを保持する
+const PASS_HASH = '204be1f56ddc570e0ee5414224c4ddb4ed09b8856df06c2c79921d68402dc288';
 
 async function sha256Hex(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-function pinInput(d) {
-  if (pinEntry.length >= 4) return;
-  pinEntry += d;
-  updateDots();
-  if (pinEntry.length === 4) checkPin();
-}
-
-function pinDelete() {
-  pinEntry = pinEntry.slice(0, -1);
-  updateDots();
-  document.getElementById('lock-error').textContent = '';
-}
-
-function updateDots() {
-  for (let i = 0; i < 4; i++) {
-    document.getElementById('dot-' + i).classList.toggle('filled', i < pinEntry.length);
-  }
-}
-
-async function checkPin() {
-  if (await sha256Hex(pinEntry) === PIN_HASH) {
+async function checkPass(e) {
+  e.preventDefault();
+  const input = document.getElementById('pass-input');
+  if (await sha256Hex(input.value) === PASS_HASH) {
     sessionStorage.setItem('ml_ok', '1');
     document.getElementById('lock-screen').style.display = 'none';
   } else {
-    document.getElementById('lock-error').textContent = '番号が違います';
-    pinEntry = '';
+    document.getElementById('lock-error').textContent = '合言葉が違います';
+    input.value = '';
     setTimeout(() => {
-      updateDots();
       document.getElementById('lock-error').textContent = '';
-    }, 800);
+    }, 1500);
   }
 }
 
