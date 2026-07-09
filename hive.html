@@ -20,6 +20,11 @@
     .screen { display: none; flex-direction: column; min-height: 100vh; }
     .screen.active { display: flex; }
 
+    /* ── SVGイラストの共通ラッパー ── */
+    .isvg { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; vertical-align: middle; line-height: 0; }
+    .isvg svg { width: 100%; height: 100%; display: block; }
+    .iemoji { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; vertical-align: middle; line-height: 1; }
+
     .header {
       background: #F59E0B;
       color: white;
@@ -68,6 +73,7 @@
       font-family: inherit;
     }
     .tabbar button .t-icon { font-size: 22px; }
+    .tabbar button .t-icon.isvg { width: 26px; height: 26px; }
     .tabbar button.active { color: #D97706; }
     .tabbar .tab-center .t-circle {
       width: 48px; height: 48px; border-radius: 50%;
@@ -374,7 +380,7 @@
 <!-- ═══════════ ホーム（巣箱一覧） ═══════════ -->
 <div class="screen active" id="scr-home">
   <div class="header"><div class="header-inner">
-    <h1>🐝 養蜂ノート</h1>
+    <h1 style="display:flex;align-items:center;gap:8px"><span class="isvg" id="header-logo" style="width:26px;height:26px"></span>養蜂ノート</h1>
     <button class="header-action" onclick="openHiveForm(null)">＋巣箱</button>
   </div></div>
   <div class="content"><div class="content-inner">
@@ -561,11 +567,11 @@
 
 <!-- ═══════════ ナビ（スマホ下部／PC上部） ═══════════ -->
 <div class="tabbar"><div class="tabbar-inner">
-  <button id="tab-home" onclick="goHome()"><span class="t-icon">🏠</span>巣箱</button>
+  <button id="tab-home" onclick="goHome()"><span class="t-icon isvg" id="nav-home-ic"></span>巣箱</button>
   <button class="tab-center" onclick="startInspection(null)">
-    <span class="t-circle">📝</span><span class="t-label">点検する</span>
+    <span class="t-circle"><span class="isvg" id="nav-inspect-ic" style="width:28px;height:28px"></span></span><span class="t-label">点検する</span>
   </button>
-  <button id="tab-settings" onclick="goSettings()"><span class="t-icon">⚙️</span>項目設定</button>
+  <button id="tab-settings" onclick="goSettings()"><span class="t-icon isvg" id="nav-settings-ic"></span>項目設定</button>
 </div></div>
 
 <div id="toast"></div>
@@ -581,6 +587,59 @@ const TONE_LABEL = { good: '良', warn: '注意', bad: '悪い', neutral: 'ふ�
 const SPECIES_LABEL = { seiyo: 'セイヨウミツバチ', nihon: 'ニホンミツバチ', sonota: 'その他' };
 const SPECIES_LIST = ['seiyo', 'nihon', 'sonota'];
 const DUE_DAYS = 14; // これ以上点検が空いたら「そろそろ点検を」
+
+/* ────────────────────────────────
+   イラスト（言葉に合わせたオリジナルSVG）
+   絵文字ではなく統一デザインのアイコンで意味を表す。
+   カスタム項目は従来どおり絵文字（フォールバック）。
+──────────────────────────────── */
+const ICONS = {
+  /* 蜂ロゴ */
+  logo: `<svg viewBox="0 0 48 48" fill="none"><ellipse cx="13" cy="19" rx="9" ry="5.5" fill="#FEF3C7" transform="rotate(-22 13 19)"/><ellipse cx="35" cy="19" rx="9" ry="5.5" fill="#FEF3C7" transform="rotate(22 35 19)"/><rect x="15" y="18" width="18" height="24" rx="9" fill="#FBBF24"/><rect x="15" y="25" width="18" height="3.4" fill="#3F2A1A"/><rect x="15" y="32" width="18" height="3.4" fill="#3F2A1A"/><circle cx="24" cy="14" r="7" fill="#1C1917"/><path d="M21 8l-2-4M27 8l2-4" stroke="#1C1917" stroke-width="2" stroke-linecap="round"/><circle cx="21.5" cy="13" r="1.3" fill="#fff"/><circle cx="26.5" cy="13" r="1.3" fill="#fff"/></svg>`,
+  /* 巣箱（重箱式） */
+  hive: `<svg viewBox="0 0 48 48" fill="none"><path d="M7 15l17-8 17 8z" fill="#B45309"/><rect x="11" y="15" width="26" height="8" rx="1.5" fill="#FBBF24" stroke="#F59E0B" stroke-width="1.5"/><rect x="11" y="23" width="26" height="8" rx="1.5" fill="#FCD34D" stroke="#F59E0B" stroke-width="1.5"/><rect x="11" y="31" width="26" height="9" rx="1.5" fill="#FBBF24" stroke="#F59E0B" stroke-width="1.5"/><rect x="20" y="35" width="8" height="4" rx="1" fill="#1C1917"/></svg>`,
+  /* 女王蜂＝蜂＋王冠 */
+  queen: `<svg viewBox="0 0 48 48" fill="none"><ellipse cx="13" cy="25" rx="8" ry="5" fill="#FEF3C7" transform="rotate(-20 13 25)"/><ellipse cx="35" cy="25" rx="8" ry="5" fill="#FEF3C7" transform="rotate(20 35 25)"/><rect x="16" y="23" width="16" height="21" rx="8" fill="#FBBF24"/><rect x="16" y="29" width="16" height="3.2" fill="#3F2A1A"/><rect x="16" y="35" width="16" height="3.2" fill="#3F2A1A"/><circle cx="24" cy="19" r="6" fill="#1C1917"/><path d="M16 12l3.2 3.5L24 10l4.8 5.5L32 12l-1.6 7.5h-12.8z" fill="#F59E0B" stroke="#B45309" stroke-width="0.8" stroke-linejoin="round"/><circle cx="24" cy="9" r="1.5" fill="#EF4444"/></svg>`,
+  /* 卵・幼虫＝巣房＋卵/幼虫 */
+  brood: `<svg viewBox="0 0 48 48" fill="none"><g stroke="#F59E0B" stroke-width="2.2" fill="#FDE68A"><path d="M12 9h5l2.5 4.3L17 17.6h-5l-2.5-4.3z"/><path d="M24 9h5l2.5 4.3L29 17.6h-5l-2.5-4.3z"/><path d="M18 19h5l2.5 4.3L23 27.6h-5l-2.5-4.3z"/><path d="M30 19h5l2.5 4.3L35 27.6h-5l-2.5-4.3z"/></g><rect x="13.4" y="10.6" width="2.3" height="6" rx="1.15" fill="#fff" transform="rotate(20 14.5 13.6)"/><path d="M33 22.2a3.2 3.2 0 1 0 0 6.4" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round"/></svg>`,
+  /* 群の勢い＝蜂3匹 */
+  power: `<svg viewBox="0 0 48 48" fill="none"><g transform="translate(3 5)"><ellipse cx="5" cy="6" rx="4" ry="2.4" fill="#FEF3C7" transform="rotate(-20 5 6)"/><ellipse cx="13" cy="6" rx="4" ry="2.4" fill="#FEF3C7" transform="rotate(20 13 6)"/><rect x="5" y="5" width="8" height="11" rx="4" fill="#FBBF24"/><rect x="5" y="8" width="8" height="2" fill="#3F2A1A"/><rect x="5" y="12" width="8" height="2" fill="#3F2A1A"/><circle cx="9" cy="3" r="3" fill="#1C1917"/></g><g transform="translate(25 8)"><ellipse cx="5" cy="6" rx="4" ry="2.4" fill="#FEF3C7" transform="rotate(-20 5 6)"/><ellipse cx="13" cy="6" rx="4" ry="2.4" fill="#FEF3C7" transform="rotate(20 13 6)"/><rect x="5" y="5" width="8" height="11" rx="4" fill="#FBBF24"/><rect x="5" y="8" width="8" height="2" fill="#3F2A1A"/><rect x="5" y="12" width="8" height="2" fill="#3F2A1A"/><circle cx="9" cy="3" r="3" fill="#1C1917"/></g><g transform="translate(14 24)"><ellipse cx="5" cy="6" rx="4" ry="2.4" fill="#FEF3C7" transform="rotate(-20 5 6)"/><ellipse cx="13" cy="6" rx="4" ry="2.4" fill="#FEF3C7" transform="rotate(20 13 6)"/><rect x="5" y="5" width="8" height="11" rx="4" fill="#FBBF24"/><rect x="5" y="8" width="8" height="2" fill="#3F2A1A"/><rect x="5" y="12" width="8" height="2" fill="#3F2A1A"/><circle cx="9" cy="3" r="3" fill="#1C1917"/></g></svg>`,
+  /* 貯蜜＝蜜の瓶 */
+  honey: `<svg viewBox="0 0 48 48" fill="none"><rect x="14" y="7" width="20" height="6" rx="2" fill="#F59E0B"/><path d="M15 13h18v22a4 4 0 0 1-4 4H19a4 4 0 0 1-4-4z" fill="#FDE68A" stroke="#F59E0B" stroke-width="2"/><path d="M15 25h18v10a4 4 0 0 1-4 4H19a4 4 0 0 1-4-4z" fill="#FBBF24"/><path d="M24 17c1.5 2.5 3.5 3.5 3.5 6a3.5 3.5 0 0 1-7 0c0-2.5 2-3.5 3.5-6z" fill="#F59E0B"/></svg>`,
+  /* 王台＝巣板から垂れる王台 */
+  cell: `<svg viewBox="0 0 48 48" fill="none"><rect x="7" y="9" width="34" height="7" rx="2" fill="#F59E0B"/><g fill="#FDE68A" stroke="#F59E0B" stroke-width="1.5"><path d="M13 16h6.5v5H13z"/><path d="M20.5 16H27v5h-6.5z"/><path d="M28 16h6.5v5H28z"/></g><path d="M24 20c-4 0-6.2 3.2-6.2 8.2S20 40 24 40s6.2-6.8 6.2-11.8S28 20 24 20z" fill="#D97706" stroke="#B45309" stroke-width="1.5"/><path d="M21.6 27h4.8M21 31h6M21.6 35h4.8" stroke="#7C2D12" stroke-width="1.3" stroke-linecap="round"/></svg>`,
+  /* ヘギイタダニ＝蜂の背のダニ */
+  varroa: `<svg viewBox="0 0 48 48" fill="none"><ellipse cx="19" cy="31" rx="14" ry="9" fill="#FBBF24"/><rect x="6" y="27" width="26" height="3" fill="#3F2A1A" opacity=".55"/><rect x="6" y="33" width="26" height="3" fill="#3F2A1A" opacity=".55"/><path d="M23 16l-4-2M22 20l-5 1M23 25l-4 3M39 16l4-2M40 20l5 1M39 25l4 3" stroke="#7C2D12" stroke-width="1.7" stroke-linecap="round"/><ellipse cx="31" cy="20" rx="8.5" ry="6.8" fill="#B45309" stroke="#7C2D12" stroke-width="1.6"/><ellipse cx="31" cy="20" rx="3" ry="2.4" fill="#7C2D12"/></svg>`,
+  /* アカリンダニの兆候＝Kウイング＋徘徊 */
+  acari: `<svg viewBox="0 0 48 48" fill="none"><ellipse cx="27" cy="16" rx="8" ry="4.5" fill="#FEF3C7" transform="rotate(-32 27 16)"/><ellipse cx="33" cy="14" rx="8" ry="4.5" fill="#FEF3C7" transform="rotate(-58 33 14)"/><rect x="15" y="19" width="14" height="19" rx="7" fill="#FBBF24"/><rect x="15" y="24" width="14" height="2.8" fill="#3F2A1A"/><rect x="15" y="30" width="14" height="2.8" fill="#3F2A1A"/><circle cx="22" cy="16" r="5.5" fill="#1C1917"/><path d="M10 42h28" stroke="#A8A29E" stroke-width="2.4" stroke-linecap="round"/><path d="M14 42q1-3 3-2M31 42q1-3 3-2" stroke="#A8A29E" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>`,
+  /* スムシ＝節のある幼虫 */
+  moth: `<svg viewBox="0 0 48 48" fill="none"><g fill="#E7E5E4" stroke="#A8A29E" stroke-width="1.4"><circle cx="11" cy="31" r="4.6"/><circle cx="18" cy="32" r="5.4"/><circle cx="25" cy="31" r="5.4"/><circle cx="32" cy="29" r="5"/><circle cx="38" cy="26" r="4.2"/></g><circle cx="39.5" cy="24.5" r="1.1" fill="#1C1917"/><path d="M41 22l2-2M41 25l2.5-.5" stroke="#A8A29E" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+  /* オオスズメバチ＝オレンジ頭＋大顎 */
+  hornet: `<svg viewBox="0 0 48 48" fill="none"><ellipse cx="12" cy="18" rx="8" ry="4.6" fill="#FEF3C7" transform="rotate(-25 12 18)"/><ellipse cx="36" cy="18" rx="8" ry="4.6" fill="#FEF3C7" transform="rotate(25 36 18)"/><path d="M18 21h12l-1.2 8L24 42l-4.8-13z" fill="#F59E0B"/><path d="M18.8 26h10.4M20 32h8M21.6 38h4.8" stroke="#1C1917" stroke-width="2.4" stroke-linecap="round"/><circle cx="24" cy="15" r="7" fill="#D97706"/><path d="M20 20l-2.5 4M28 20l2.5 4" stroke="#7C2D12" stroke-width="2.2" stroke-linecap="round"/><circle cx="21.5" cy="14" r="1.3" fill="#1C1917"/><circle cx="26.5" cy="14" r="1.3" fill="#1C1917"/></svg>`,
+  /* 出入り／機嫌＝巣門と出入りする蜂 */
+  mood: `<svg viewBox="0 0 48 48" fill="none"><rect x="8" y="11" width="32" height="29" rx="3" fill="#FBBF24" stroke="#F59E0B" stroke-width="2"/><rect x="8" y="29" width="32" height="7" fill="#F59E0B"/><rect x="12" y="30" width="24" height="5" rx="1" fill="#1C1917"/><circle cx="18" cy="32.5" r="2" fill="#FDE68A"/><circle cx="26" cy="32.5" r="2" fill="#FDE68A"/><circle cx="35" cy="41" r="2.6" fill="#FBBF24" stroke="#3F2A1A" stroke-width="1"/></svg>`,
+  /* 給餌＝シロップの瓶＋滴 */
+  feed: `<svg viewBox="0 0 48 48" fill="none"><rect x="17" y="6" width="14" height="5" rx="1.5" fill="#60A5FA"/><path d="M17 11h14v20a4 4 0 0 1-4 4H21a4 4 0 0 1-4-4z" fill="#DBEAFE" stroke="#60A5FA" stroke-width="2"/><path d="M17 22h14v9a4 4 0 0 1-4 4H21a4 4 0 0 1-4-4z" fill="#93C5FD"/><path d="M24 37c1.6 2 2.6 3 2.6 4.4a2.6 2.6 0 0 1-5.2 0c0-1.4 1-2.4 2.6-4.4z" fill="#60A5FA"/></svg>`,
+  /* やった作業＝養蜂の道具（燻煙器＋ハイブツール） */
+  work: `<svg viewBox="0 0 48 48" fill="none"><rect x="27" y="9" width="5" height="30" rx="2" fill="#94A3B8" transform="rotate(28 29.5 24)"/><path d="M33 9l4 2-2 4" fill="none" stroke="#94A3B8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" transform="rotate(28 34 12)"/><path d="M9 40V29a7 7 0 0 1 14 0v11z" fill="#B45309"/><ellipse cx="16" cy="29" rx="7" ry="3" fill="#D97706"/><path d="M16 21q-2.5-3 0-6.5" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M9 40h14" stroke="#7C2D12" stroke-width="2"/></svg>`,
+};
+const DEFAULT_ICON_BY_ID = {
+  queen: 'queen', brood: 'brood', power: 'power', honey: 'honey', cell: 'cell',
+  varroa: 'varroa', acari: 'acari', moth: 'moth', hornet: 'hornet', mood: 'mood',
+  feed: 'feed', work: 'work',
+};
+/* ナビ用イラスト */
+ICONS.navHome = `<svg viewBox="0 0 48 48" fill="none"><path d="M7 15l17-8 17 8z" fill="#D97706"/><rect x="11" y="15" width="26" height="8" rx="1.5" fill="#FBBF24"/><rect x="11" y="23" width="26" height="8" rx="1.5" fill="#FCD34D"/><rect x="11" y="31" width="26" height="9" rx="1.5" fill="#FBBF24"/><rect x="20" y="35" width="8" height="4" rx="1" fill="#1C1917"/></svg>`;
+ICONS.navSettings = `<svg viewBox="0 0 48 48" fill="none"><g stroke="#A8A29E" stroke-width="3" stroke-linecap="round"><path d="M9 15h30M9 24h30M9 33h30"/></g><circle cx="18" cy="15" r="4.4" fill="#fff" stroke="#A8A29E" stroke-width="3"/><circle cx="31" cy="24" r="4.4" fill="#fff" stroke="#A8A29E" stroke-width="3"/><circle cx="21" cy="33" r="4.4" fill="#fff" stroke="#A8A29E" stroke-width="3"/></svg>`;
+ICONS.navInspect = `<svg viewBox="0 0 48 48" fill="none"><rect x="11" y="9" width="26" height="32" rx="3" fill="#fff"/><rect x="18" y="6" width="12" height="6" rx="2" fill="#FDE68A"/><path d="M16 21h13M16 28h9" stroke="#F59E0B" stroke-width="2.6" stroke-linecap="round"/><path d="M29 33l5-5 3.4 3.4-5 5H29z" fill="#F59E0B"/></svg>`;
+function iconMarkup(item, size) {
+  const key = (item.icon) || DEFAULT_ICON_BY_ID[item.id];
+  if (key && ICONS[key]) return `<span class="isvg" style="width:${size}px;height:${size}px">${ICONS[key]}</span>`;
+  return `<span class="iemoji" style="font-size:${Math.round(size*0.84)}px">${item.emoji}</span>`;
+}
+function uiIcon(key, size) {
+  return `<span class="isvg" style="width:${size}px;height:${size}px">${ICONS[key] || ''}</span>`;
+}
 
 /* 種類別の初期点検項目 */
 function seiyoItems() {
@@ -766,7 +825,7 @@ function renderHome() {
   if (!state.hives.length) {
     el.classList.remove('has-items');
     el.innerHTML = `<div class="empty">
-      <div class="icon">🐝</div>
+      <div class="icon"><span class="isvg" style="width:84px;height:84px">${ICONS.logo}</span></div>
       <p>まだ巣箱がありません。<br>右上の「＋巣箱」から<br>最初の巣箱を登録しましょう。</p>
     </div>`;
     return;
@@ -795,7 +854,7 @@ function renderHome() {
     }
     return `<div class="hive-card" onclick="openHiveDetail('${h.id}')">
       <div class="hive-card-top">
-        <div class="hive-icon">🛖</div>
+        <div class="hive-icon"><span class="isvg" style="width:30px;height:30px">${ICONS.hive}</span></div>
         <div class="hive-info">
           <div class="hive-name">${esc(h.name)}</div>
           <div class="hive-meta">
@@ -946,7 +1005,7 @@ function renderTimeline() {
       if (!arr || !arr.length) continue;
       for (const a of arr) chips.push(`<span class="achip tone-${a.tone}">${esc(a.label)}</span>`);
       rows.push(`<div class="tl-row">
-        <span class="tl-q">${item.emoji} ${esc(item.label)}</span>
+        <span class="tl-q">${iconMarkup(item, 18)} ${esc(item.label)}</span>
         <span class="tl-a">${arr.map(a => `<span class="achip tone-${a.tone}">${esc(a.label)}</span>`).join(' ')}</span>
       </div>`);
     }
@@ -1063,7 +1122,7 @@ function renderQuestion() {
   const isSel = label => selected.some(a => a.label === label);
   const c = document.getElementById('ins-q-container');
   c.innerHTML = `<div class="q-card">
-    <div class="q-emoji">${item.emoji}</div>
+    <div class="q-emoji">${iconMarkup(item, 56)}</div>
     <div class="q-label">${esc(item.label)}</div>
     <div class="q-hint">${item.multi ? '当てはまるものをすべてタップ' : '1つ選んでタップ（自動で次へ）'} ・ ${ins.qIndex + 1}/${items.length}</div>
     <div class="q-options">
@@ -1247,7 +1306,7 @@ function renderSettings() {
   const el = document.getElementById('settings-list');
   el.innerHTML = items.map((item, i) => `
     <div class="item-row ${item.enabled ? '' : 'off'}">
-      <span class="item-emoji">${item.emoji}</span>
+      <span class="item-emoji">${iconMarkup(item, 30)}</span>
       <div class="item-main" onclick="openItemEditor('${item.id}')">
         <div class="item-label">${esc(item.label)}${item.multi ? ' <span style="font-size:10px;color:#A8A29E">複数選択</span>' : ''}</div>
         <div class="item-opts">${item.options.map(o => esc(o.label)).join(' / ')}</div>
@@ -1379,6 +1438,10 @@ function importData(input) {
 }
 
 /* ── 初期表示 ── */
+document.getElementById('header-logo').innerHTML = ICONS.logo;
+document.getElementById('nav-home-ic').innerHTML = ICONS.navHome;
+document.getElementById('nav-inspect-ic').innerHTML = ICONS.navInspect;
+document.getElementById('nav-settings-ic').innerHTML = ICONS.navSettings;
 initVoice();
 renderHome();
 renderWeather();
