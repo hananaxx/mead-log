@@ -97,6 +97,21 @@
     .weather-good { background: #ECFDF5; border-color: #A7F3D0; }
     .weather-bad  { background: #FEF2F2; border-color: #FECACA; }
 
+    /* ── 養蜂場セクション ── */
+    .apiary-section { margin-bottom: 22px; }
+    .apiary-head { display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 700; color: #92400E; margin: 2px 2px 10px; }
+    .apiary-head .cnt { font-size: 12px; color: #A8A29E; font-weight: 600; }
+
+    /* ── 養蜂場チップ（巣箱フォーム） ── */
+    .chip-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip {
+      padding: 9px 14px; border-radius: 20px; border: 1.5px solid #FDE68A;
+      background: white; font-size: 14px; font-weight: 600; color: #78716C;
+      cursor: pointer; font-family: inherit;
+    }
+    .chip.sel { background: #F59E0B; border-color: #F59E0B; color: white; }
+    .chip-add { border-style: dashed; color: #D97706; }
+
     /* ── Hive grid ── */
     .hive-grid.has-items { display: grid; grid-template-columns: 1fr; gap: 12px; }
     .hive-card {
@@ -410,12 +425,16 @@
       </div>
     </div>
     <div class="form-group">
+      <label>養蜂場（設置場所・任意）</label>
+      <div class="chip-row" id="hf-apiary"></div>
+    </div>
+    <div class="form-group">
       <label>飼育開始日</label>
       <input class="form-input" type="date" id="hf-start">
     </div>
     <div class="form-group">
       <label>メモ（任意）</label>
-      <textarea class="form-input" id="hf-memo" placeholder="設置場所、群の由来など"></textarea>
+      <textarea class="form-input" id="hf-memo" placeholder="群の由来、女王の系統など"></textarea>
     </div>
     <button class="btn-primary" onclick="saveHive()">保存する</button>
     <button class="btn-danger-text" id="hf-delete" onclick="deleteHive()">この巣箱を削除</button>
@@ -632,6 +651,7 @@ const DEFAULT_ICON_BY_ID = {
 ICONS.navHome = `<svg viewBox="0 0 48 48" fill="none"><path d="M7 15l17-8 17 8z" fill="#D97706"/><rect x="11" y="15" width="26" height="8" rx="1.5" fill="#FBBF24"/><rect x="11" y="23" width="26" height="8" rx="1.5" fill="#FCD34D"/><rect x="11" y="31" width="26" height="9" rx="1.5" fill="#FBBF24"/><rect x="20" y="35" width="8" height="4" rx="1" fill="#1C1917"/></svg>`;
 ICONS.navSettings = `<svg viewBox="0 0 48 48" fill="none"><g stroke="#A8A29E" stroke-width="3" stroke-linecap="round"><path d="M9 15h30M9 24h30M9 33h30"/></g><circle cx="18" cy="15" r="4.4" fill="#fff" stroke="#A8A29E" stroke-width="3"/><circle cx="31" cy="24" r="4.4" fill="#fff" stroke="#A8A29E" stroke-width="3"/><circle cx="21" cy="33" r="4.4" fill="#fff" stroke="#A8A29E" stroke-width="3"/></svg>`;
 ICONS.navInspect = `<svg viewBox="0 0 48 48" fill="none"><rect x="11" y="9" width="26" height="32" rx="3" fill="#fff"/><rect x="18" y="6" width="12" height="6" rx="2" fill="#FDE68A"/><path d="M16 21h13M16 28h9" stroke="#F59E0B" stroke-width="2.6" stroke-linecap="round"/><path d="M29 33l5-5 3.4 3.4-5 5H29z" fill="#F59E0B"/></svg>`;
+ICONS.pin = `<svg viewBox="0 0 48 48" fill="none"><path d="M24 5c-7.2 0-12.5 5.3-12.5 12.3 0 8.6 12.5 25.7 12.5 25.7s12.5-17.1 12.5-25.7C36.5 10.3 31.2 5 24 5z" fill="#F59E0B"/><circle cx="24" cy="18" r="5" fill="#fff"/></svg>`;
 function iconMarkup(item, size) {
   const key = (item.icon) || DEFAULT_ICON_BY_ID[item.id];
   if (key && ICONS[key]) return `<span class="isvg" style="width:${size}px;height:${size}px">${ICONS[key]}</span>`;
@@ -720,7 +740,10 @@ function load() {
     const raw = localStorage.getItem(STORE_KEY);
     if (raw) {
       const s = JSON.parse(raw);
-      if (s.hives && s.inspections && s.itemsBySpecies) return s;
+      if (s.hives && s.inspections && s.itemsBySpecies) {
+        if (!s.apiaries) s.apiaries = [];
+        return s;
+      }
     }
   } catch (e) {}
   // v1 からの移行
@@ -731,11 +754,11 @@ function load() {
       if (old.hives && old.inspections) {
         const items = defaultItemsBySpecies();
         if (Array.isArray(old.items) && old.items.length) items.seiyo = old.items;
-        return { hives: old.hives, inspections: old.inspections, itemsBySpecies: items };
+        return { hives: old.hives, inspections: old.inspections, itemsBySpecies: items, apiaries: [] };
       }
     }
   } catch (e) {}
-  return { hives: [], inspections: [], itemsBySpecies: defaultItemsBySpecies() };
+  return { hives: [], inspections: [], itemsBySpecies: defaultItemsBySpecies(), apiaries: [] };
 }
 function persist() {
   try {
@@ -823,51 +846,74 @@ function renderHome() {
   renderGuide();
   const el = document.getElementById('home-list');
   if (!state.hives.length) {
-    el.classList.remove('has-items');
+    el.className = '';
     el.innerHTML = `<div class="empty">
       <div class="icon"><span class="isvg" style="width:84px;height:84px">${ICONS.logo}</span></div>
       <p>まだ巣箱がありません。<br>右上の「＋巣箱」から<br>最初の巣箱を登録しましょう。</p>
     </div>`;
     return;
   }
-  el.classList.add('has-items');
-  el.innerHTML = state.hives.map(h => {
-    const last = hiveLastInspection(h.id);
-    let dot = 'dot-none', lastTxt = '点検記録なし', alerts = '', dueTag = '';
-    if (last) {
-      const tone = worstTone(last);
-      dot = tone === 'bad' ? 'dot-bad' : tone === 'warn' ? 'dot-warn' : tone === 'good' ? 'dot-good' : 'dot-none';
-      lastTxt = `最終点検: ${daysAgo(last.date)}`;
-      if (daysSince(last.date) >= DUE_DAYS) dueTag = `<span class="due-tag">そろそろ点検を</span>`;
-      const bads = [];
-      for (const [itemId, arr] of Object.entries(last.answers)) {
-        const item = findItem(h.species, itemId);
-        for (const a of arr) {
-          if (a.tone === 'bad' || a.tone === 'warn') {
-            bads.push(`<span class="achip tone-${a.tone}">${item ? esc(item.label) + ': ' : ''}${esc(a.label)}</span>`);
-          }
+  const apiaries = state.apiaries || [];
+  if (!apiaries.length) {
+    // 養蜂場が未登録なら従来どおりフラット表示
+    el.className = 'hive-grid has-items';
+    el.innerHTML = state.hives.map(hiveCardHTML).join('');
+    return;
+  }
+  // 養蜂場ごとにグループ表示
+  el.className = '';
+  let html = '';
+  for (const a of apiaries) {
+    const hs = state.hives.filter(h => h.apiaryId === a.id);
+    if (!hs.length) continue;
+    html += apiarySectionHTML(a.name, hs);
+  }
+  const unset = state.hives.filter(h => !h.apiaryId || !apiaries.find(a => a.id === h.apiaryId));
+  if (unset.length) html += apiarySectionHTML('場所未設定', unset);
+  el.innerHTML = html;
+}
+function apiarySectionHTML(name, hives) {
+  return `<div class="apiary-section">
+    <div class="apiary-head"><span class="isvg" style="width:18px;height:18px">${ICONS.pin}</span>${esc(name)} <span class="cnt">${hives.length}箱</span></div>
+    <div class="hive-grid has-items">${hives.map(hiveCardHTML).join('')}</div>
+  </div>`;
+}
+function hiveCardHTML(h) {
+  const last = hiveLastInspection(h.id);
+  let dot = 'dot-none', lastTxt = '点検記録なし', alerts = '', dueTag = '';
+  if (last) {
+    const tone = worstTone(last);
+    dot = tone === 'bad' ? 'dot-bad' : tone === 'warn' ? 'dot-warn' : tone === 'good' ? 'dot-good' : 'dot-none';
+    lastTxt = `最終点検: ${daysAgo(last.date)}`;
+    if (daysSince(last.date) >= DUE_DAYS) dueTag = `<span class="due-tag">そろそろ点検を</span>`;
+    const bads = [];
+    for (const [itemId, arr] of Object.entries(last.answers)) {
+      const item = findItem(h.species, itemId);
+      for (const a of arr) {
+        if (a.tone === 'bad' || a.tone === 'warn') {
+          bads.push(`<span class="achip tone-${a.tone}">${item ? esc(item.label) + ': ' : ''}${esc(a.label)}</span>`);
         }
       }
-      if (bads.length) alerts = `<div class="hive-alerts">${bads.join('')}</div>`;
-    } else {
-      dueTag = `<span class="due-tag">点検しましょう</span>`;
     }
-    return `<div class="hive-card" onclick="openHiveDetail('${h.id}')">
-      <div class="hive-card-top">
-        <div class="hive-icon"><span class="isvg" style="width:30px;height:30px">${ICONS.hive}</span></div>
-        <div class="hive-info">
-          <div class="hive-name">${esc(h.name)}</div>
-          <div class="hive-meta">
-            <span class="badge badge-${h.species}">${SPECIES_LABEL[h.species] || 'その他'}</span>
-            <span>${lastTxt}</span>
-            ${dueTag}
-          </div>
+    if (bads.length) alerts = `<div class="hive-alerts">${bads.join('')}</div>`;
+  } else {
+    dueTag = `<span class="due-tag">点検しましょう</span>`;
+  }
+  return `<div class="hive-card" onclick="openHiveDetail('${h.id}')">
+    <div class="hive-card-top">
+      <div class="hive-icon"><span class="isvg" style="width:30px;height:30px">${ICONS.hive}</span></div>
+      <div class="hive-info">
+        <div class="hive-name">${esc(h.name)}</div>
+        <div class="hive-meta">
+          <span class="badge badge-${h.species}">${SPECIES_LABEL[h.species] || 'その他'}</span>
+          <span>${lastTxt}</span>
+          ${dueTag}
         </div>
-        <div class="status-dot ${dot}"></div>
       </div>
-      ${alerts}
-    </div>`;
-  }).join('');
+      <div class="status-dot ${dot}"></div>
+    </div>
+    ${alerts}
+  </div>`;
 }
 function renderGuide() {
   const g = MONTHLY_GUIDE[new Date().getMonth() + 1];
@@ -930,9 +976,31 @@ function weatherInfo(code) {
    巣箱の追加・編集
 ──────────────────────────────── */
 let editHiveId = null;
+let selectedApiaryId = null;
 function pickSpecies(btn) {
   document.querySelectorAll('#hf-species button').forEach(b => b.classList.remove('sel'));
   btn.classList.add('sel');
+}
+function renderApiaryPicker() {
+  const box = document.getElementById('hf-apiary');
+  let html = (state.apiaries || []).map(a =>
+    `<button type="button" class="chip ${a.id === selectedApiaryId ? 'sel' : ''}" onclick="pickApiary('${a.id}')">${esc(a.name)}</button>`
+  ).join('');
+  html += `<button type="button" class="chip ${!selectedApiaryId ? 'sel' : ''}" onclick="pickApiary('')">場所なし</button>`;
+  html += `<button type="button" class="chip chip-add" onclick="addApiary()">＋新しい場所</button>`;
+  box.innerHTML = html;
+}
+function pickApiary(id) { selectedApiaryId = id || null; renderApiaryPicker(); }
+function addApiary() {
+  const name = prompt('養蜂場（設置場所）の名前\n例：自宅の庭、裏山、〇〇さんの畑');
+  if (name === null) return;
+  const nm = name.trim();
+  if (!nm) return;
+  const a = { id: uid(), name: nm };
+  state.apiaries.push(a);
+  persist();
+  selectedApiaryId = a.id;
+  renderApiaryPicker();
 }
 function openHiveForm(hiveId) {
   editHiveId = hiveId;
@@ -944,6 +1012,8 @@ function openHiveForm(hiveId) {
   document.querySelectorAll('#hf-species button').forEach(b => {
     b.classList.toggle('sel', b.dataset.v === (h ? h.species : 'seiyo'));
   });
+  selectedApiaryId = h ? (h.apiaryId || null) : null;
+  renderApiaryPicker();
   document.getElementById('hf-delete').style.display = h ? 'block' : 'none';
   showScreen('scr-hive-form');
 }
@@ -953,11 +1023,12 @@ function saveHive() {
   const species = document.querySelector('#hf-species button.sel').dataset.v;
   const start = document.getElementById('hf-start').value || todayStr();
   const memo = document.getElementById('hf-memo').value.trim();
+  const apiaryId = selectedApiaryId || null;
   if (editHiveId) {
     const h = state.hives.find(x => x.id === editHiveId);
-    Object.assign(h, { name, species, start, memo });
+    Object.assign(h, { name, species, start, memo, apiaryId });
   } else {
-    state.hives.push({ id: uid(), name, species, start, memo });
+    state.hives.push({ id: uid(), name, species, start, memo, apiaryId });
   }
   if (persist()) { toast('保存しました'); goHome(); }
 }
