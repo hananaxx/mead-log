@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>養蜂ノート</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     /* ═══ デザイントークン ═══ */
     :root {
@@ -373,6 +374,9 @@
     .voice-btn:active { transform: scale(0.9); }
     .voice-btn.rec { background: #FEE2E2; border-color: #FCA5A5; animation: pulse 1s infinite; }
     @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .ocr-btn { right: 57px; overflow: hidden; }
+    .ocr-btn input[type=file] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+    .ocr-btn.busy { background: var(--amber-soft); border-color: var(--amber); animation: pulse 1s infinite; pointer-events: none; }
 
     /* ── 履歴タイムライン ── */
     .tl-entry {
@@ -657,8 +661,10 @@
           <label>メモ</label>
           <div class="memo-wrap">
             <textarea class="form-input" id="ins-memo" placeholder="気づいたことをメモ"></textarea>
+            <button class="voice-btn ocr-btn" id="ocr-btn" type="button" title="薬剤・資材ラベルの文字を読み取ってメモに入れる">📄<input type="file" accept="image/*" capture="environment" onchange="runOcr(this)"></button>
             <button class="voice-btn" id="voice-btn" onclick="toggleVoice()" title="音声で入力">🎤</button>
           </div>
+          <p style="font-size:11px;color:var(--ink-3);margin-top:6px">📄=ラベルの文字を読み取り　🎤=音声で入力</p>
         </div>
         <button class="btn-primary" onclick="saveInspection()">点検を保存する</button>
         <div class="q-nav">
@@ -1507,6 +1513,42 @@ function stopVoice() {
   recording = false;
   const b = document.getElementById('voice-btn');
   if (b) b.classList.remove('rec');
+}
+
+/* ────────────────────────────────
+   ラベルOCR（Tesseract.js・無料）
+   薬剤・給餌材などのラベルを撮影→文字を読み取り→メモに下書き入力
+──────────────────────────────── */
+async function runOcr(input) {
+  const file = input.files[0];
+  input.value = '';
+  if (!file) return;
+  if (typeof Tesseract === 'undefined') {
+    alert('文字読み取りの部品を読み込めませんでした。電波の良い場所で開き直してからお試しください。');
+    return;
+  }
+  const btn = document.getElementById('ocr-btn');
+  if (btn.classList.contains('busy')) return;
+  btn.classList.add('busy');
+  toast('ラベルを読み取り中…（初回は少し時間がかかります）');
+  try {
+    const dataUrl = await new Promise(res => compressImage(file, res));
+    const result = await Tesseract.recognize(dataUrl, 'jpn+eng');
+    let text = (result.data.text || '')
+      .replace(/[ \t]+/g, ' ')
+      .replace(/\n{2,}/g, '\n')
+      .trim();
+    // 日本語OCRは文字間に余計な空白が入りやすいので詰める
+    text = text.replace(/([ぁ-んァ-ヶ一-龠々ー]) (?=[ぁ-んァ-ヶ一-龠々ー])/g, '$1');
+    if (!text) { toast('文字を読み取れませんでした。明るい場所で正面から撮ると成功しやすいです'); return; }
+    const ta = document.getElementById('ins-memo');
+    ta.value = (ta.value ? ta.value.trimEnd() + '\n' : '') + text;
+    toast('読み取り結果をメモに入れました。間違いがあれば直してください');
+  } catch (e) {
+    toast('読み取りに失敗しました。もう一度お試しください');
+  } finally {
+    btn.classList.remove('busy');
+  }
 }
 
 /* ────────────────────────────────
